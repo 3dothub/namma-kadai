@@ -1,111 +1,108 @@
 import React, { useEffect, useRef } from 'react';
-import { Text, StyleSheet, Animated, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, Animated, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
-interface SnackbarProps {
+interface SnackBarProps {
   visible: boolean;
   message: string;
-  type?: 'success' | 'error' | 'info';
+  type: 'success' | 'error';
   duration?: number;
-  onDismiss: () => void;
+  onHide: () => void;
 }
 
-const HEADER_HEIGHT = Platform.OS === 'ios' ? 44 : 56;
-
-export const Snackbar: React.FC<SnackbarProps> = ({
+export const SnackBar: React.FC<SnackBarProps> = ({
   visible,
   message,
-  type = 'info',
-  duration = 2000,
-  onDismiss,
+  type,
+  duration = 3000,
+  onHide,
 }) => {
-  const insets = useSafeAreaInsets();
-  const translateY = useRef(new Animated.Value(-200)).current;
+  const translateY = useRef(new Animated.Value(-100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
+      // Show animation
       Animated.parallel([
-        Animated.spring(translateY, {
+        Animated.timing(translateY, {
           toValue: 0,
-          tension: 80,
-          friction: 12,
+          duration: 300,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 200,
+          duration: 300,
           useNativeDriver: true,
         }),
       ]).start();
 
-      const timer = setTimeout(() => hide(), duration);
+      // Auto hide
+      const timer = setTimeout(() => {
+        hideSnackBar();
+      }, duration);
+
       return () => clearTimeout(timer);
+    } else {
+      hideSnackBar();
     }
   }, [visible]);
 
-  const hide = () => {
+  const hideSnackBar = () => {
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: -200, // Increased to match the full header height
-        duration: 200,
+        toValue: -100,
+        duration: 300,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 200,
+        duration: 300,
         useNativeDriver: true,
       }),
-    ]).start(() => onDismiss());
+    ]).start(() => {
+      onHide();
+    });
   };
 
-  if (!visible) return null;
-
-  const colors = {
-    success: { bg: '#E8F5E9', text: '#2E7D32' },
-    error: { bg: '#FFE7E7', text: '#D92D20' },
-    info: { bg: '#E3F2FD', text: '#1565C0' },
-  }[type];
+  const backgroundColor = type === 'success' ? '#10b981' : '#ef4444';
+  const iconName: 'checkmark-circle' | 'alert-circle' = type === 'success' ? 'checkmark-circle' : 'alert-circle';
 
   return (
     <Animated.View
-      style={[
-        styles.container,
-        {
-          backgroundColor: colors.bg,
-          transform: [{ translateY }],
-          opacity,
-          paddingTop: insets.top + HEADER_HEIGHT, // Add header height to top padding
-        },
-      ]}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        transform: [{ translateY }],
+        opacity,
+      }}
     >
-      <Text style={[styles.message, { color: colors.text }]} numberOfLines={2}>
-        {message}
-      </Text>
+      <SafeAreaView edges={['top']}>
+        <View
+          style={{
+            backgroundColor,
+            marginHorizontal: 16,
+            marginTop: 8,
+            borderRadius: 12,
+            padding: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+            elevation: 5,
+          }}
+        >
+          <Ionicons name={iconName} size={20} color="#fff" style={{ marginRight: 12 }} />
+          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '500', flex: 1 }}>
+            {message}
+          </Text>
+        </View>
+      </SafeAreaView>
     </Animated.View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    minHeight: Platform.select({
-      ios: 120,
-      android: 112
-    }),
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 16,
-    zIndex: 9999,
-    elevation: 9999,
-  },
-  message: {
-    fontSize: 15,
-    fontWeight: '500',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-});

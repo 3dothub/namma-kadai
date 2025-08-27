@@ -1,16 +1,12 @@
 {
   "expo": {
-    "name": "nammakadai",
-    "slug": "nammakadai",
-    "scheme": "nammakadai",
+    "name": "namma-kadai",
+    "slug": "namma-kadai",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "plugins": [
-      "expo-router"
-    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -29,8 +25,12 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "scheme": "namma-kadai",
     "plugins": [
       "expo-router"
-    ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

@@ -1,39 +1,23 @@
+import { Slot, Stack } from 'expo-router';
 import { Provider } from 'react-redux';
-import { store } from '../store';
-import { Stack } from 'expo-router';
-import { useEffect } from 'react';
-import { useAppSelector } from '../hooks/useRedux';
-import { useRouter, useSegments } from 'expo-router';
-
-function Root() {
-  const segments = useSegments();
-  const router = useRouter();
-  const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
-
-  useEffect(() => {
-    const inAuthGroup = segments[0] === '(auth)';
-    const inProtectedGroup = segments[0] === '(tabs)';
-
-    if (!isAuthenticated && inProtectedGroup) {
-      router.replace('/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      router.replace('/');
-    }
-  }, [isAuthenticated, segments]);
-
-  return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
-  );
-}
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from '../store';
+import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Text } from 'react-native';
 
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <Root />
+      <PersistGate loading={<Text>Loading...</Text>} persistor={persistor}>
+        <SafeAreaProvider>
+          <StatusBar style="auto" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+        </SafeAreaProvider>
+      </PersistGate>
     </Provider>
   );
 }

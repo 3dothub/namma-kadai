@@ -1,56 +1,67 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useAppDispatch, useAppSelector } from '../../hooks/useRedux';
-import { logout } from '../../store/slices/authSlice';
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export default function More() {
-  const dispatch = useAppDispatch();
-  const user = useAppSelector((state) => state.auth.user);
-
+export default function MoreScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>More</Text>
-      {user ? (
-        <>
-          <Text style={styles.text}>Welcome, {user.name}</Text>
-          <TouchableOpacity 
-            style={styles.button} 
-            onPress={() => dispatch(logout())}
-          >
-            <Text style={styles.buttonText}>Logout</Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <Text style={styles.text}>Please login to see more options</Text>
-      )}
-    </View>
+    <SafeAreaView style={styles.container}>
+      {/* Custom Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>
+          More
+        </Text>
+      </View>
+
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.content}>
+          <Text style={styles.title}>
+            MORE CONTENT WILL APPEAR
+          </Text>
+          <Text style={styles.subtitle}>
+            This is where additional app features and settings will be displayed
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: '#fff',
+  },
+  header: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#000',
+    textAlign: 'center',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 16,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  text: {
+    color: '#666',
     fontSize: 18,
-    marginBottom: 20,
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 16,
   },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 5,
-    width: '100%',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+  subtitle: {
+    color: '#999',
+    textAlign: 'center',
   },
 });

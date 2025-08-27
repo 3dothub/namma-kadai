@@ -1,157 +1,160 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  KeyboardAvoidingView, 
+  Platform,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
-import { useState, useEffect } from 'react';
-import { useAppDispatch } from '../../hooks/useRedux';
-import { useRegisterMutation } from '../../services/authApi';
-import { setCredentials as setAuthCredentials } from '../../store/slices/authSlice';
-import { Header } from '../../components/Header';
-import { Snackbar } from '../../components/Snackbar';
+import { useRegisterMutation } from '../../store/api/authApi';
+import { useDispatch } from 'react-redux';
+import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
+import { SnackBar } from '../../components/SnackBar';
 
-export default function Register() {
-  const dispatch = useAppDispatch();
-  const [register, { isLoading, error, data }] = useRegisterMutation();
-  const [credentials, setCredentials] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
-  const [snackbar, setSnackbar] = useState({
-    visible: false,
-    message: '',
-    type: 'info' as 'success' | 'error' | 'info'
-  });
+export default function RegisterScreen() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [snackbar, setSnackbar] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
+  
+  const [register, { isLoading }] = useRegisterMutation();
+  const dispatch = useDispatch();
 
-  useEffect(() => {
-    if (error) {
-      setSnackbar({
-        visible: true,
-        message: 'Registration failed. Please try again.',
-        type: 'error'
-      });
-    }
-    if (data) {
-      dispatch(setAuthCredentials(data));
-      setSnackbar({
-        visible: true,
-        message: 'Registration successful!',
-        type: 'success'
-      });
-      setTimeout(() => router.replace('/(tabs)/home'), 1000);
-    }
-  }, [error, data]);
-
-  const handleRegister = () => {
-    // Validate inputs
-    if (!credentials.name || !credentials.email || !credentials.password || !credentials.confirmPassword) {
-      setSnackbar({
-        visible: true,
-        message: 'Please fill in all fields',
-        type: 'info'
-      });
+  const handleRegister = async () => {
+    if (!name || !email || !password || !confirmPassword) {
+      setSnackbar({ visible: true, message: 'Please fill in all fields', type: 'error' });
       return;
     }
 
-    if (credentials.password !== credentials.confirmPassword) {
-      setSnackbar({
-        visible: true,
-        message: 'Passwords do not match',
-        type: 'error'
-      });
+    if (password !== confirmPassword) {
+      setSnackbar({ visible: true, message: 'Passwords do not match', type: 'error' });
       return;
     }
-    console.log("credentials", credentials);
 
-    // Call register mutation
-    register({
-      name: credentials.name,
-      email: credentials.email,
-      password: credentials.password
-    }).unwrap()
-      .catch(error => {
-        console.log("Registration error", error);
-        let errorMessage = 'Registration failed';
-        
-        if (error.status === 'FETCH_ERROR') {
-          errorMessage = 'Network error. Please check your internet connection.';
-        } else if (error.data?.message) {
-          errorMessage = error.data.message;
-        }
-        
-        setSnackbar({
-          visible: true,
-          message: errorMessage,
-          type: 'error'
-        });
-      });
+    if (password.length < 6) {
+      setSnackbar({ visible: true, message: 'Password must be at least 6 characters', type: 'error' });
+      return;
+    }
+
+    try {
+      dispatch(loginStart());
+      const response = await register({ name, email, password }).unwrap();
+      dispatch(loginSuccess({ user: response.user, token: response.token }));
+      // Use backend success message
+      const successMessage = response.message || 'Registration successful!';
+      setSnackbar({ visible: true, message: successMessage, type: 'success' });
+      setTimeout(() => router.replace('/(tabs)/home'), 1500);
+    } catch (error: any) {
+      // Use backend error message
+      const errorMessage = error?.data?.message || error?.message || 'Registration failed';
+      dispatch(loginFailure(errorMessage));
+      setSnackbar({ visible: true, message: errorMessage, type: 'error' });
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Header title="Register" showBack />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.content}>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              autoCapitalize="words"
-              value={credentials.name}
-              onChangeText={(text) => setCredentials(prev => ({ ...prev, name: text }))}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={credentials.email}
-              onChangeText={(text) => setCredentials(prev => ({ ...prev, email: text }))}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              secureTextEntry
-              value={credentials.password}
-              onChangeText={(text) => setCredentials(prev => ({ ...prev, password: text }))}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              secureTextEntry
-              value={credentials.confirmPassword}
-              onChangeText={(text) => setCredentials(prev => ({ ...prev, confirmPassword: text }))}
-            />
-            <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
-              onPress={handleRegister}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.buttonText}>Register</Text>
-              )}
-            </TouchableOpacity>
-            <Link href="/login" style={styles.link}>
-              Already have an account? Login
-            </Link>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-
-      <Snackbar
+    <SafeAreaView style={styles.container}>
+      <SnackBar
         visible={snackbar.visible}
         message={snackbar.message}
         type={snackbar.type}
-        onDismiss={() => setSnackbar(prev => ({ ...prev, visible: false }))}
+        onHide={() => setSnackbar({ ...snackbar, visible: false })}
       />
-    </View>
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>
+                Create Account
+              </Text>
+              <Text style={styles.subtitle}>
+                Sign up to get started
+              </Text>
+            </View>
+
+            {/* Form */}
+            <View style={styles.form}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Full Name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your full name"
+                  value={name}
+                  onChangeText={setName}
+                  autoCorrect={false}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Confirm Password</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.button, isLoading && styles.buttonDisabled]}
+                onPress={handleRegister}
+                disabled={isLoading}
+              >
+                <Text style={styles.buttonText}>
+                  {isLoading ? 'Creating Account...' : 'Create Account'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Already have an account?{' '}
+                <Link href="/(auth)/login">
+                  <Text style={styles.linkText}>Sign In</Text>
+                </Link>
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -160,48 +163,80 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  keyboardView: {
+  keyboardAvoidingView: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
+  scrollView: {
+    flex: 1,
   },
   content: {
-    flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 32,
+    minHeight: '100%',
     justifyContent: 'center',
+  },
+  header: {
+    marginBottom: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  form: {
+    marginTop: 16,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    color: '#000',
+    fontWeight: '600',
+    marginBottom: 8,
   },
   input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#E8ECF4',
-    borderRadius: 8,
-    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#E5E5E5',
+    borderRadius: 4,
     paddingHorizontal: 16,
-    backgroundColor: '#F7F8F9',
-    fontSize: 15,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    fontSize: 16,
+    color: '#000',
   },
   button: {
-    backgroundColor: '#0066FF',
-    height: 48,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
+    paddingVertical: 18,
+    borderRadius: 4,
+    backgroundColor: '#000',
+    marginTop: 12,
   },
   buttonDisabled: {
-    backgroundColor: '#99C2FF',
+    backgroundColor: '#999',
   },
   buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  link: {
-    marginTop: 16,
-    color: '#0066FF',
+    color: '#fff',
     textAlign: 'center',
-    fontSize: 15,
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  footer: {
+    marginTop: 32,
+  },
+  footerText: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 16,
+  },
+  linkText: {
+    color: '#000',
+    fontWeight: '600',
   },
 });
