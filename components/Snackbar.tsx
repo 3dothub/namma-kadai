@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, Animated, Dimensions, Platform, StyleSheet } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 interface SnackBarProps {
@@ -18,21 +18,22 @@ export const SnackBar: React.FC<SnackBarProps> = ({
   duration = 3000,
   onHide,
 }) => {
-  const translateY = useRef(new Animated.Value(-100)).current;
+  const insets = useSafeAreaInsets();
+  const translateY = useRef(new Animated.Value(-200)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      // Show animation
+      // Show animation - slide down from top
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: 0,
-          duration: 300,
+          duration: 400,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 300,
+          duration: 400,
           useNativeDriver: true,
         }),
       ]).start();
@@ -51,13 +52,13 @@ export const SnackBar: React.FC<SnackBarProps> = ({
   const hideSnackBar = () => {
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: -100,
-        duration: 300,
+        toValue: -200,
+        duration: 400,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 0,
-        duration: 300,
+        duration: 400,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -70,39 +71,64 @@ export const SnackBar: React.FC<SnackBarProps> = ({
 
   return (
     <Animated.View
-      style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9999,
-        transform: [{ translateY }],
-        opacity,
-      }}
+      style={[
+        styles.container,
+        {
+          transform: [{ translateY }],
+          opacity,
+        }
+      ]}
     >
-      <SafeAreaView edges={['top']}>
-        <View
-          style={{
+      <View
+        style={[
+          styles.snackbar,
+          {
             backgroundColor,
-            marginHorizontal: 16,
-            marginTop: 8,
-            borderRadius: 12,
-            padding: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 3.84,
-            elevation: 5,
-          }}
-        >
-          <Ionicons name={iconName} size={20} color="#fff" style={{ marginRight: 12 }} />
-          <Text style={{ color: '#fff', fontSize: 16, fontWeight: '500', flex: 1 }}>
+            paddingTop: insets.top + 16,
+            paddingBottom: 16,
+          }
+        ]}
+      >
+        <View style={styles.content}>
+          <Ionicons name={iconName} size={24} color="#fff" style={styles.icon} />
+          <Text style={styles.message}>
             {message}
           </Text>
         </View>
-      </SafeAreaView>
+      </View>
     </Animated.View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 9999,
+  },
+  snackbar: {
+    width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  icon: {
+    marginRight: 12,
+  },
+  message: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 22,
+  },
+});

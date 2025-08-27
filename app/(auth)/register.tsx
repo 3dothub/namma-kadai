@@ -26,6 +26,15 @@ export default function RegisterScreen() {
   const [register, { isLoading }] = useRegisterMutation();
   const dispatch = useDispatch();
 
+  // Prevent layout shift on mount
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
+
+  React.useEffect(() => {
+    // Small delay to prevent initial layout jump
+    const timer = setTimeout(() => setIsLayoutReady(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
   const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
       setSnackbar({ visible: true, message: 'Please fill in all fields', type: 'error' });
@@ -67,12 +76,18 @@ export default function RegisterScreen() {
         onHide={() => setSnackbar({ ...snackbar, visible: false })}
       />
       
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.content}>
+      {isLayoutReady && (
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}
+        >
+          <ScrollView 
+            style={styles.scrollView} 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.content}>
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.title}>
@@ -154,6 +169,7 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
@@ -169,10 +185,13 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   content: {
+    flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 32,
-    minHeight: '100%',
     justifyContent: 'center',
   },
   header: {

@@ -48,37 +48,13 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Quick Actions */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Quick Actions
-            </Text>
-            <View style={styles.actionsGrid}>
-              {[
-                { title: 'Browse Products', bgColor: '#DBEAFE', textColor: '#1E40AF' },
-                { title: 'Track Orders', bgColor: '#D1FAE5', textColor: '#065F46' },
-                { title: 'View Offers', bgColor: '#FED7AA', textColor: '#9A3412' },
-                { title: 'Help & Support', bgColor: '#E9D5FF', textColor: '#6B21A8' },
-              ].map((action, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[styles.actionCard, { backgroundColor: action.bgColor }]}
-                >
-                  <Text style={[styles.actionText, { color: action.textColor }]}>
-                    {action.title}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
           {/* Logout Button for Testing */}
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={handleLogout}
           >
             <Text style={styles.logoutButtonText}>
-              Logout (For Testing)
+              Logout
             </Text>
           </TouchableOpacity>
         </View>
