@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function FavouriteScreen() {
   return (
     <SafeAreaView style={styles.container}>
-      {/* Custom Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
           Favourite
