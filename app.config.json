@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "667e569c-9bba-4fc2-b6f4-5b412ae53c03"
+      }
+    },
+    "owner": "3dothub",
+    "android": {
+      "package": "com.threedotart.namma_kadai"
+    }
+  }
+}

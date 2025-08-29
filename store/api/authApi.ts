@@ -25,7 +25,7 @@ interface AuthResponse {
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://192.168.1.3:3000/auth',
+    baseUrl: 'https://api-namma-kadai.vercel.app/auth',
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token;
       if (token) {
