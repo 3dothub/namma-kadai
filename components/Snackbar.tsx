@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 interface SnackBarProps {
   visible: boolean;
   message: string;
-  type: 'success' | 'error';
+  type: 'success' | 'error' | 'info';
   duration?: number;
   onHide: () => void;
 }

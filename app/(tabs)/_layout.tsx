@@ -1,7 +1,23 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, Platform, StyleSheet } from 'react-native';
+import { View, Text, Platform, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import React from 'react';
+
+// Create a simple event system for add product modal
+let addProductListeners: (() => void)[] = [];
+
+export const subscribeToAddProduct = (listener: () => void) => {
+  addProductListeners.push(listener);
+  return () => {
+    addProductListeners = addProductListeners.filter(l => l !== listener);
+  };
+};
+
+export const triggerAddProduct = () => {
+  addProductListeners.forEach(listener => listener());
+};
 
 function CustomHeader({ title }: { title: string }) {
   return (
@@ -16,6 +32,12 @@ function CustomHeader({ title }: { title: string }) {
 }
 
 export default function TabsLayout() {
+  const router = useRouter();
+
+  const handleAddPress = () => {
+    triggerAddProduct();
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -23,11 +45,11 @@ export default function TabsLayout() {
           backgroundColor: '#fff',
           borderTopWidth: 1,
           borderTopColor: '#e5e7eb',
-          height: Platform.OS === 'ios' ? 85 : 70,
-          paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+          height: Platform.OS === 'ios' ? 90 : 75,
+          paddingBottom: Platform.OS === 'ios' ? 30 : 15,
           paddingTop: 10,
         },
-        tabBarActiveTintColor: '#3b82f6',
+        tabBarActiveTintColor: '#22C55E',
         tabBarInactiveTintColor: '#6b7280',
         tabBarLabelStyle: {
           fontSize: 12,
@@ -52,6 +74,23 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart-outline" size={size} color={color} />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="add"
+        options={{
+          title: '',
+          tabBarIcon: ({ focused }) => (
+            <View style={[styles.centerButton, focused && styles.centerButtonActive]}>
+              <Ionicons name="add" size={28} color="#fff" />
+            </View>
+          ),
+        }}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            handleAddPress();
+          },
         }}
       />
       <Tabs.Screen
@@ -91,5 +130,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     textAlign: 'center',
+  },
+  centerButton: {
+    backgroundColor: '#22C55E',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#22C55E',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  centerButtonActive: {
+    backgroundColor: '#16A34A',
   },
 });
