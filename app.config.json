@@ -8,6 +8,12 @@
     "owner": "3dothub",
     "android": {
       "package": "com.threedotart.namma_kadai"
+    },
+    "ios": {
+      "bundleIdentifier": "com.3dothub.nammakadai",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }
