@@ -4,12 +4,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { Ionicons } from '@expo/vector-icons';
-import { SnackBar } from '../../components/SnackBar';
+
 import { AddProductModal } from '../../components/AddProductModal';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import * as Animatable from 'react-native-animatable';
 import { Product, Vendor, CartItem, toggleFavorite, addToCart, removeFromCart, updateCartItemQuantity, clearCart } from '../../store/slices/productSlice';
+import { showSnackbar, hideSnackbar } from '../../store/slices/snackbarSlice';
 import { subscribeToAddProduct } from './_layout';
 
 const { width } = Dimensions.get('window');
@@ -31,13 +32,6 @@ export default function HomeScreen() {
   const [showCheckoutModal, setShowCheckoutModal] = useState<boolean>(false);
   const [showAddProductModal, setShowAddProductModal] = useState<boolean>(false);
   
-  // Snackbar state
-  const [snackbar, setSnackbar] = useState({
-    visible: false,
-    message: '',
-    type: 'success' as 'success' | 'error' | 'info'
-  });
-
   // Auto-select first vendor when vendors change
   useEffect(() => {
     if (vendors.length > 0 && !selectedVendor) {
@@ -56,22 +50,14 @@ export default function HomeScreen() {
     }, [])
   );
 
-  const showSnackbar = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
-    setSnackbar({ visible: true, message, type });
-  };
-
-  const hideSnackbar = () => {
-    setSnackbar({ ...snackbar, visible: false });
-  };
-
   const addToCartHandler = (product: Product) => {
     dispatch(addToCart(product));
-    showSnackbar(`${product.name} added to cart!`, 'success');
+    dispatch(showSnackbar({ message: `${product.name} added to cart!`, type: 'success' }));
   };
 
   const removeFromCartHandler = (productId: number) => {
     dispatch(removeFromCart(productId));
-    showSnackbar('Item removed from cart', 'info');
+    dispatch(showSnackbar({ message: 'Item removed from cart', type: 'info' }));
 
     // Close cart modal if cart becomes empty
     if (cart.length === 1) {
@@ -98,21 +84,23 @@ export default function HomeScreen() {
     const willBeFavorite = !product?.isFavorite;
     
     dispatch(toggleFavorite(productId));
-    showSnackbar(
-      willBeFavorite ? 'Added to favorites' : 'Removed from favorites',
-      'success'
-    );
+    dispatch(showSnackbar({
+      message: willBeFavorite ? 'Added to favorites' : 'Removed from favorites',
+      type: 'success'
+    }));
   };
 
   const handleCheckout = () => {
+    debugger;
+    setShowCartModal(false);
     if (!user) {
-      showSnackbar('Please login to proceed', 'info');
+      dispatch(showSnackbar({ message: 'Please login to proceed', type: 'info' }));
       // Navigate to login screen
       router.push('/(auth)/login');
       return;
     }
-    setShowCartModal(false);
     setShowCheckoutModal(true);
+
   };
 
   const filteredVendors = vendors.filter((vendor: Vendor) => 
@@ -121,12 +109,12 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.welcomeSection}>
-            <Text style={styles.welcomeText}>Welcome {user?.name || 'Raja'}!</Text>
+            <Text style={styles.welcomeText}>Welcome {user?.name || 'Anonymous'}!</Text>
           </View>
           <TouchableOpacity 
             style={styles.notificationButton}
@@ -230,7 +218,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 80 }} />
       </ScrollView>
 
       {/* Cart Bottom Section */}
@@ -441,7 +429,7 @@ export default function HomeScreen() {
               <TouchableOpacity 
                 style={styles.placeOrderButton}
                 onPress={() => {
-                  showSnackbar('Order placed successfully!', 'success');
+                  dispatch(showSnackbar({ message: 'Order placed successfully!', type: 'success' }));
                   dispatch(clearCart());
                   setShowCheckoutModal(false);
                 }}
@@ -453,19 +441,11 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Snackbar */}
-      <SnackBar
-        visible={snackbar.visible}
-        message={snackbar.message}
-        type={snackbar.type}
-        onHide={hideSnackbar}
-      />
-
       {/* Add Product Modal */}
       <AddProductModal
         visible={showAddProductModal}
         onClose={() => setShowAddProductModal(false)}
-        onSuccess={showSnackbar}
+        onSuccess={(message) => dispatch(showSnackbar({ message, type: 'success' }))}
       />
     </SafeAreaView>
   );
@@ -475,6 +455,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingBottom: 0,
   },
   modalOverlay: {
     flex: 1,
@@ -678,17 +659,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cartSection: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e1e5e9',
     paddingTop: 12,
-    paddingBottom: 35,
+    paddingBottom: 20,
     paddingHorizontal: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 5,
+    zIndex: 999,
   },
   cartHeader: {
     flexDirection: 'row',

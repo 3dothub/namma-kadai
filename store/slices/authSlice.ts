@@ -1,4 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { authApi } from '../api/authApi';
+
 
 export interface User {
   id: string;
@@ -50,6 +52,70 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+  },
+  extraReducers: (builder) => {
+    // Handle login mutation
+    builder.addMatcher(
+      authApi.endpoints.login.matchFulfilled,
+      (state, { payload }) => {
+        state.user = payload.user;
+        state.token = payload.token;
+        state.isAuthenticated = true;
+        state.isLoading = false;
+        state.error = null;
+      }
+    );
+    builder.addMatcher(
+      authApi.endpoints.login.matchPending,
+      (state) => {
+        state.isLoading = true;
+        state.error = null;
+      }
+    );
+    builder.addMatcher(
+      authApi.endpoints.login.matchRejected,
+      (state, { error }) => {
+        state.isLoading = false;
+        state.error = error.message || 'Login failed';
+      }
+    );
+
+    // Handle register mutation
+    builder.addMatcher(
+      authApi.endpoints.register.matchFulfilled,
+      (state, { payload }) => {
+        state.user = payload.user;
+        state.token = payload.token;
+        state.isAuthenticated = true;
+        state.isLoading = false;
+        state.error = null;
+      }
+    );
+    builder.addMatcher(
+      authApi.endpoints.register.matchPending,
+      (state) => {
+        state.isLoading = true;
+        state.error = null;
+      }
+    );
+    builder.addMatcher(
+      authApi.endpoints.register.matchRejected,
+      (state, { error }) => {
+        state.isLoading = false;
+        state.error = error.message || 'Registration failed';
+      }
+    );
+
+    // Handle verify token query
+    builder.addMatcher(
+      authApi.endpoints.verifyToken.matchFulfilled,
+      (state, { payload }) => {
+        state.user = payload.user;
+        state.isAuthenticated = true;
+        state.isLoading = false;
+        state.error = null;
+      }
+    );
   },
 });
 

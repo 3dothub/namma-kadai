@@ -1,7 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, Platform, StyleSheet, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Platform, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import React from 'react';
 
@@ -18,18 +17,6 @@ export const subscribeToAddProduct = (listener: () => void) => {
 export const triggerAddProduct = () => {
   addProductListeners.forEach(listener => listener());
 };
-
-function CustomHeader({ title }: { title: string }) {
-  return (
-    <SafeAreaView edges={['top']} style={styles.headerContainer}>
-      <View style={styles.headerContent}>
-        <Text style={styles.headerTitle}>
-          {title}
-        </Text>
-      </View>
-    </SafeAreaView>
-  );
-}
 
 export default function TabsLayout() {
   const router = useRouter();

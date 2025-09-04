@@ -1,8 +1,18 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch } from 'react-redux';
+import { logout } from '../../store/slices/authSlice';
+import { router } from 'expo-router';
 
 export default function MoreScreen() {
+  const dispatch = useDispatch();
+
+  const handleLogout = () => {
+    dispatch(logout());
+    router.replace('/(auth)/login');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Custom Header */}
@@ -14,12 +24,13 @@ export default function MoreScreen() {
 
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
-          <Text style={styles.title}>
-            MORE CONTENT WILL APPEAR
-          </Text>
-          <Text style={styles.subtitle}>
-            This is where additional app features and settings will be displayed
-          </Text>
+          <Text style={styles.title}>Settings</Text>
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -63,5 +74,17 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#999',
     textAlign: 'center',
+  },
+  logoutButton: {
+    backgroundColor: '#ff4444',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

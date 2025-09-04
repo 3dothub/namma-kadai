@@ -1,24 +1,38 @@
-import { Slot, Stack } from 'expo-router';
-import { Provider } from 'react-redux';
-import { PersistGate } from 'redux-persist/integration/react';
-import { store, persistor } from '../store';
-import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Text } from 'react-native';
+import { Slot } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SnackBar } from "../components/SnackBar";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../store";
+import { hideSnackbar } from "../store/slices/snackbarSlice";
+import { ReduxProvider } from "../providers";
+
+function AppContent() {
+  const dispatch = useDispatch();
+  const snackbarState = useSelector((state: RootState) => state.snackbar);
+
+  const handleHideSnackbar = () => {
+    dispatch(hideSnackbar());
+  };
+
+  return (
+    <SafeAreaProvider>
+      <StatusBar style="auto" />
+      <Slot />
+      <SnackBar
+        visible={snackbarState.visible}
+        message={snackbarState.message}
+        type={snackbarState.type}
+        onHide={handleHideSnackbar}
+      />
+    </SafeAreaProvider>
+  );
+}
 
 export default function RootLayout() {
   return (
-    <Provider store={store}>
-      <PersistGate loading={<Text>Loading...</Text>} persistor={persistor}>
-        <SafeAreaProvider>
-          <StatusBar style="auto" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="notifications" options={{ headerShown: false }} />
-          </Stack>
-        </SafeAreaProvider>
-      </PersistGate>
-    </Provider>
+    <ReduxProvider>
+      <AppContent />
+    </ReduxProvider>
   );
 }

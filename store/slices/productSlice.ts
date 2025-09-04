@@ -60,6 +60,28 @@ const initialVendors: Vendor[] = [
         deliveryTime: '30 mins',
         vendorName: 'Bags Minerals',
         isFavorite: false
+      },
+      { 
+        id: 3, 
+        name: '1 Litre Bottle', 
+        price: 15, 
+        offerPrice: 12,
+        image: 'assets/icon.png',
+        description: 'Fresh and pure 1L water bottle',
+        deliveryTime: '30 mins',
+        vendorName: 'Bags Minerals',
+        isFavorite: false
+      },
+      { 
+        id: 4, 
+        name: '500ml Bottle Pack', 
+        price: 120, 
+        offerPrice: 100,
+        image: 'assets/icon.png',
+        description: 'Pack of 12 500ml water bottles',
+        deliveryTime: '30 mins',
+        vendorName: 'Bags Minerals',
+        isFavorite: false
       }
     ]
   },
@@ -70,7 +92,7 @@ const initialVendors: Vendor[] = [
     image: 'assets/icon.png',
     products: [
       { 
-        id: 3, 
+        id: 5, 
         name: 'Chocolate Cake', 
         price: 450, 
         offerPrice: 400,
@@ -81,12 +103,45 @@ const initialVendors: Vendor[] = [
         isFavorite: false
       },
       { 
-        id: 4, 
+        id: 6, 
         name: 'Vanilla Cake', 
         price: 400, 
         offerPrice: 350,
         image: 'assets/icon.png',
         description: 'Fresh vanilla cake',
+        deliveryTime: '45 mins',
+        vendorName: 'A1 Cake Shop',
+        isFavorite: false
+      },
+      { 
+        id: 7, 
+        name: 'Red Velvet Cake', 
+        price: 600, 
+        offerPrice: 550,
+        image: 'assets/icon.png',
+        description: 'Premium red velvet cake',
+        deliveryTime: '45 mins',
+        vendorName: 'A1 Cake Shop',
+        isFavorite: false
+      },
+      { 
+        id: 8, 
+        name: 'Fruit Cake', 
+        price: 500, 
+        offerPrice: 450,
+        image: 'assets/icon.png',
+        description: 'Fresh fruit cake with seasonal fruits',
+        deliveryTime: '45 mins',
+        vendorName: 'A1 Cake Shop',
+        isFavorite: false
+      },
+      { 
+        id: 9, 
+        name: 'Black Forest', 
+        price: 550, 
+        offerPrice: 500,
+        image: 'assets/icon.png',
+        description: 'Classic black forest cake',
         deliveryTime: '45 mins',
         vendorName: 'A1 Cake Shop',
         isFavorite: false
@@ -100,7 +155,7 @@ const initialVendors: Vendor[] = [
     image: 'assets/icon.png',
     products: [
       { 
-        id: 5, 
+        id: 10, 
         name: 'South Indian Thali', 
         price: 120, 
         offerPrice: 100,
@@ -111,7 +166,7 @@ const initialVendors: Vendor[] = [
         isFavorite: false
       },
       { 
-        id: 6, 
+        id: 11, 
         name: 'Sambar Rice', 
         price: 80, 
         offerPrice: 70,
@@ -119,6 +174,80 @@ const initialVendors: Vendor[] = [
         description: 'Homemade sambar rice',
         deliveryTime: '20 mins',
         vendorName: "Komala's Kitchen",
+        isFavorite: false
+      },
+      { 
+        id: 12, 
+        name: 'Curd Rice', 
+        price: 70, 
+        offerPrice: 60,
+        image: 'assets/icon.png',
+        description: 'Fresh curd rice with tempering',
+        deliveryTime: '20 mins',
+        vendorName: "Komala's Kitchen",
+        isFavorite: false
+      },
+      { 
+        id: 13, 
+        name: 'Veg Biryani', 
+        price: 140, 
+        offerPrice: 120,
+        image: 'assets/icon.png',
+        description: 'Fragrant vegetable biryani',
+        deliveryTime: '30 mins',
+        vendorName: "Komala's Kitchen",
+        isFavorite: false
+      },
+      { 
+        id: 14, 
+        name: 'Chapati Set', 
+        price: 90, 
+        offerPrice: 80,
+        image: 'assets/icon.png',
+        description: '4 chapatis with curry',
+        deliveryTime: '25 mins',
+        vendorName: "Komala's Kitchen",
+        isFavorite: false
+      }
+    ]
+  },
+  {
+    id: 4,
+    name: "Fresh Juice Bar",
+    category: 'Beverages',
+    image: 'assets/icon.png',
+    products: [
+      { 
+        id: 15, 
+        name: 'Fresh Orange Juice', 
+        price: 60, 
+        offerPrice: 50,
+        image: 'assets/icon.png',
+        description: 'Fresh squeezed orange juice',
+        deliveryTime: '20 mins',
+        vendorName: "Fresh Juice Bar",
+        isFavorite: false
+      },
+      { 
+        id: 16, 
+        name: 'Watermelon Juice', 
+        price: 50, 
+        offerPrice: 40,
+        image: 'assets/icon.png',
+        description: 'Refreshing watermelon juice',
+        deliveryTime: '20 mins',
+        vendorName: "Fresh Juice Bar",
+        isFavorite: false
+      },
+      { 
+        id: 17, 
+        name: 'Mixed Fruit Juice', 
+        price: 70, 
+        offerPrice: 60,
+        image: 'assets/icon.png',
+        description: 'Blend of seasonal fruits',
+        deliveryTime: '20 mins',
+        vendorName: "Fresh Juice Bar",
         isFavorite: false
       }
     ]

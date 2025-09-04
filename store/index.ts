@@ -4,7 +4,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { combineReducers } from '@reduxjs/toolkit';
 import authSlice from './slices/authSlice';
 import productSlice from './slices/productSlice';
+import snackbarSlice from './slices/snackbarSlice';
 import { authApi } from './api/authApi';
+import { authMiddleware } from './middleware';
 
 const persistConfig = {
   key: 'root',
@@ -15,6 +17,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   auth: authSlice,
   products: productSlice,
+  snackbar: snackbarSlice,
   [authApi.reducerPath]: authApi.reducer,
 });
 
@@ -27,7 +30,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/FLUSH', 'persist/REHYDRATE', 'persist/PAUSE', 'persist/PERSIST', 'persist/PURGE', 'persist/REGISTER'],
       },
-    }).concat(authApi.middleware),
+    }).concat(authApi.middleware, authMiddleware),
 });
 
 export const persistor = persistStore(store);
