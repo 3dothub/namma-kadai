@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "namma-kadai",
+    "name": "Namma Kadai",
     "slug": "namma-kadai",
-    "version": "1.0.0",
+    "version": "1.0.0.a",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#22C55E"
     },
     "ios": {
       "supportsTablet": true
@@ -18,17 +18,39 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#22C55E"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.threedotart.namma_kadai",
+      "versionCode": 1
     },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "usesCleartextTraffic": true,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "34.0.0",
+            "enableJetifier": true,
+            "edgeToEdgeEnabled": true
+          }
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "scheme": "namma-kadai",
-    "plugins": [
-      "expo-router"
-    ],
     "experiments": {
       "typedRoutes": true
     }
