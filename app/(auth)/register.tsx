@@ -13,15 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { useRegisterMutation } from '../../store/api/authApi';
 import { useDispatch } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { SnackBar } from '../../components/SnackBar';
+import { loginSuccess } from '../../store/slices/authSlice';
+import { showSnackbar } from '../../store/slices/snackbarSlice';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [snackbar, setSnackbar] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
   
   const [register, { isLoading }] = useRegisterMutation();
   const dispatch = useDispatch();
@@ -37,45 +36,35 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
-      setSnackbar({ visible: true, message: 'Please fill in all fields', type: 'error' });
+      dispatch(showSnackbar({ message: 'Please fill in all fields', type: 'error' }));
       return;
     }
 
     if (password !== confirmPassword) {
-      setSnackbar({ visible: true, message: 'Passwords do not match', type: 'error' });
+      dispatch(showSnackbar({ message: 'Passwords do not match', type: 'error' }));
       return;
     }
 
     if (password.length < 6) {
-      setSnackbar({ visible: true, message: 'Password must be at least 6 characters', type: 'error' });
+      dispatch(showSnackbar({ message: 'Password must be at least 6 characters', type: 'error' }));
       return;
     }
 
     try {
-      dispatch(loginStart());
       const response = await register({ name, email, password }).unwrap();
       dispatch(loginSuccess({ user: response.user, token: response.token }));
-      // Use backend success message
-      const successMessage = response.message || 'Registration successful!';
-      setSnackbar({ visible: true, message: successMessage, type: 'success' });
+      if (response.message) {
+        dispatch(showSnackbar({ message: response.message, type: 'success' }));
+      }
       setTimeout(() => router.replace('/(tabs)/home'), 1500);
     } catch (error: any) {
-      // Use backend error message
-      const errorMessage = error?.data?.message || error?.message || 'Registration failed';
-      dispatch(loginFailure(errorMessage));
-      setSnackbar({ visible: true, message: errorMessage, type: 'error' });
+      const errorMessage = error?.data?.message || 'An error occurred during registration';
+      dispatch(showSnackbar({ message: errorMessage, type: 'error' }));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <SnackBar
-        visible={snackbar.visible}
-        message={snackbar.message}
-        type={snackbar.type}
-        onHide={() => setSnackbar({ ...snackbar, visible: false })}
-      />
-      
       {isLayoutReady && (
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

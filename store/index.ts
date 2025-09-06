@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { combineReducers } from '@reduxjs/toolkit';
 import authSlice from './slices/authSlice';
 import { authApi } from './api/authApi';
+import snackbarSlice from './slices/snackbarSlice';
 
 const persistConfig = {
   key: 'root',
@@ -13,6 +14,7 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
   auth: authSlice,
+  snackbar: snackbarSlice,
   [authApi.reducerPath]: authApi.reducer,
 });
 
