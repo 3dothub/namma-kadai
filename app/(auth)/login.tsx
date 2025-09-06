@@ -12,48 +12,37 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { useLoginMutation } from '../../store/api/authApi';
 import { useDispatch } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { SnackBar } from '../../components/SnackBar';
+import { loginSuccess } from '../../store/slices/authSlice';
+import { showSnackbar } from '../../store/slices/snackbarSlice';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [snackbar, setSnackbar] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
   
   const [login, { isLoading }] = useLoginMutation();
   const dispatch = useDispatch();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      setSnackbar({ visible: true, message: 'Please fill in all fields', type: 'error' });
+      dispatch(showSnackbar({ message: 'Please fill in all fields', type: 'error' }));
       return;
     }
 
     try {
-      dispatch(loginStart());
       const response = await login({ email, password }).unwrap();
       dispatch(loginSuccess({ user: response.user, token: response.token }));
-      // Use backend success message
-      const successMessage = response.message || 'Login successful!';
-      setSnackbar({ visible: true, message: successMessage, type: 'success' });
+      if (response.message) {
+        dispatch(showSnackbar({ message: response.message, type: 'success' }));
+      }
       setTimeout(() => router.replace('/(tabs)/home'), 1500);
     } catch (error: any) {
-      // Use backend error message
-      const errorMessage = error?.data?.message || error?.message || 'Login failed';
-      dispatch(loginFailure(errorMessage));
-      setSnackbar({ visible: true, message: errorMessage, type: 'error' });
+      const errorMessage = error?.data?.message || 'An error occurred during login';
+      dispatch(showSnackbar({ message: errorMessage, type: 'error' }));
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <SnackBar
-        visible={snackbar.visible}
-        message={snackbar.message}
-        type={snackbar.type}
-        onHide={() => setSnackbar({ ...snackbar, visible: false })}
-      />
-      
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}

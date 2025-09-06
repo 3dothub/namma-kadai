@@ -5,6 +5,7 @@ import { store, persistor } from '../store';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Text } from 'react-native';
+import AppWrapper from '../components/AppWrapper';
 
 export default function RootLayout() {
   return (
@@ -12,10 +13,12 @@ export default function RootLayout() {
       <PersistGate loading={<Text>Loading...</Text>} persistor={persistor}>
         <SafeAreaProvider>
           <StatusBar style="auto" />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
+          <AppWrapper>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            </Stack>
+          </AppWrapper>
         </SafeAreaProvider>
       </PersistGate>
     </Provider>

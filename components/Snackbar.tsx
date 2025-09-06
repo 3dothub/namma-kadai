@@ -3,7 +3,7 @@ import { View, Text, Animated, Dimensions, Platform, StyleSheet } from 'react-na
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-interface SnackBarProps {
+interface SnackbarProps {
   visible: boolean;
   message: string;
   type: 'success' | 'error';
@@ -11,7 +11,7 @@ interface SnackBarProps {
   onHide: () => void;
 }
 
-export const SnackBar: React.FC<SnackBarProps> = ({
+export const Snackbar: React.FC<SnackbarProps> = ({
   visible,
   message,
   type,
