@@ -14,7 +14,7 @@ import { Link, router } from 'expo-router';
 import { useLoginMutation } from '../../store/api/authApi';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { SnackBar } from '../../components/SnackBar';
+import { Snackbar } from '../../components/Snackbar';
 import { SocialButton } from '../../components/SocialButton';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -51,7 +51,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <SnackBar
+  <Snackbar
         visible={snackbar.visible}
         message={snackbar.message}
         type={snackbar.type}

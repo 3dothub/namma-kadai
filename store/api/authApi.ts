@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../index';
+import { authUrl } from '../../config/apiBaseUrl';
 
 interface LoginRequest {
   email: string;
@@ -25,7 +26,7 @@ interface AuthResponse {
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'https://api-namma-kadai.vercel.app/auth',
+    baseUrl: authUrl,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token;
       if (token) {

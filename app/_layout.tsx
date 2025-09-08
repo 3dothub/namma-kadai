@@ -1,7 +1,7 @@
 import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { SnackBar } from "../components/SnackBar";
+import { Snackbar } from "../components/Snackbar";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../store";
 import { hideSnackbar } from "../store/slices/snackbarSlice";
@@ -19,7 +19,7 @@ function AppContent() {
     <SafeAreaProvider>
       <StatusBar style="auto" />
       <Slot />
-      <SnackBar
+  <Snackbar
         visible={snackbarState.visible}
         message={snackbarState.message}
         type={snackbarState.type}

@@ -11,7 +11,7 @@ interface SnackBarProps {
   onHide: () => void;
 }
 
-export const SnackBar: React.FC<SnackBarProps> = ({
+export const Snackbar: React.FC<SnackBarProps> = ({
   visible,
   message,
   type,
