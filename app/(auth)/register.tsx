@@ -6,17 +6,21 @@ import {
   TouchableOpacity, 
   KeyboardAvoidingView, 
   Platform,
-  ScrollView,
   StyleSheet,
+  StatusBar,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { useRegisterMutation } from '../../store/api/authApi';
+import { useUpdateLocationMutation } from '../../store/api/userApi';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { Snackbar } from '../../components/Snackbar';
-import { SocialButton } from '../../components/SocialButton';
+import { showSnackbar } from '../../store/slices/snackbarSlice';
 import { Ionicons } from '@expo/vector-icons';
+import { currentTheme } from '../../constants/Colors';
+import { sharedStyles } from '../../constants/SharedStyles';
+import { getCurrentLocation, requestLocationPermission } from '../../services/locationService';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -25,36 +29,93 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [snackbar, setSnackbar] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
+  const [nameFocused, setNameFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   
   const [register, { isLoading }] = useRegisterMutation();
+  const [updateLocation] = useUpdateLocationMutation();
   const dispatch = useDispatch();
 
-  // Check if passwords match and both are filled
+  // Check if passwords match
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
-  const shouldShowConfirmPassword = password.length > 0 && !passwordsMatch;
+
+  const handleLocationAccess = async (): Promise<void> => {
+    try {
+      const hasPermission = await requestLocationPermission();
+      
+      if (hasPermission) {
+        const location = await getCurrentLocation();
+        
+        if (location) {
+          await updateLocation({
+            lat: location.lat,
+            lng: location.lng,
+          }).unwrap();
+          
+          dispatch(showSnackbar({ 
+            message: 'Location updated successfully!', 
+            type: 'success' 
+          }));
+        } else {
+          dispatch(showSnackbar({ 
+            message: 'Could not get current location', 
+            type: 'info' 
+          }));
+        }
+      } else {
+        dispatch(showSnackbar({ 
+          message: 'Location permission denied', 
+          type: 'info' 
+        }));
+      }
+    } catch (error) {
+      console.error('Location error:', error);
+      dispatch(showSnackbar({ 
+        message: 'Failed to update location', 
+        type: 'error' 
+      }));
+    }
+  };
+
+  const showLocationPermissionDialog = (): void => {
+    Alert.alert(
+      'Location Access',
+      'We need access to your location to provide better services and find nearby stores.',
+      [
+        {
+          text: 'Not Now',
+          style: 'cancel',
+          onPress: () => {
+            // Proceed to home without location
+            router.replace('/(tabs)/home');
+          }
+        },
+        {
+          text: 'Allow',
+          onPress: async () => {
+            await handleLocationAccess();
+            router.replace('/(tabs)/home');
+          }
+        }
+      ]
+    );
+  };
 
   const handleRegister = async () => {
-    // Auto-set confirmPassword if passwords match and confirmPassword is empty
-    const finalConfirmPassword = passwordsMatch ? password : confirmPassword;
-    
-    if (!name || !email || !password) {
-      setSnackbar({ visible: true, message: 'Please fill in all fields', type: 'error' });
+    if (!name || !email || !password || !confirmPassword) {
+      dispatch(showSnackbar({ message: 'Please fill in all fields', type: 'error' }));
       return;
     }
 
-    if (!passwordsMatch && !finalConfirmPassword) {
-      setSnackbar({ visible: true, message: 'Please confirm your password', type: 'error' });
-      return;
-    }
-
-    if (password !== finalConfirmPassword) {
-      setSnackbar({ visible: true, message: 'Passwords do not match', type: 'error' });
+    if (password !== confirmPassword) {
+      dispatch(showSnackbar({ message: 'Passwords do not match', type: 'error' }));
       return;
     }
 
     if (password.length < 6) {
-      setSnackbar({ visible: true, message: 'Password must be at least 6 characters', type: 'error' });
+      dispatch(showSnackbar({ message: 'Password must be at least 6 characters', type: 'error' }));
       return;
     }
 
@@ -62,325 +123,262 @@ export default function RegisterScreen() {
       dispatch(loginStart());
       const response = await register({ name, email, password }).unwrap();
       dispatch(loginSuccess({ user: response.user, token: response.token }));
-      // Use backend success message
       const successMessage = response.message || 'Registration successful!';
-      setSnackbar({ visible: true, message: successMessage, type: 'success' });
-      setTimeout(() => router.replace('/(tabs)/home'), 1500);
+      dispatch(showSnackbar({ message: successMessage, type: 'success' }));
+      
+      // Show location permission dialog after successful registration
+      setTimeout(() => {
+        showLocationPermissionDialog();
+      }, 1500);
     } catch (error: any) {
-      // Use backend error message
       const errorMessage = error?.data?.message || error?.message || 'Registration failed';
       dispatch(loginFailure(errorMessage));
-      setSnackbar({ visible: true, message: errorMessage, type: 'error' });
+      dispatch(showSnackbar({ message: errorMessage, type: 'error' }));
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-  <Snackbar
-        visible={snackbar.visible}
-        message={snackbar.message}
-        type={snackbar.type}
-        onHide={() => setSnackbar({ ...snackbar, visible: false })}
-      />
+    <View style={styles.container}>
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
-        <ScrollView 
-          style={styles.scrollView} 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          bounces={false}
+      <SafeAreaView style={sharedStyles.content} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}
         >
-
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Create Account</Text>
-          </View>
-
-          {/* Form Section */}
-          <View style={styles.formContainer}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your full name"
-                placeholderTextColor="#9ca3af"
-                value={name}
-                onChangeText={setName}
-                autoCorrect={false}
-              />
+          <View style={styles.contentContainer}>
+            {/* Header */}
+            <View style={sharedStyles.header}>
+              <Text style={styles.title}>Sign up</Text>
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="name@gmail.com"
-                placeholderTextColor="#9ca3af"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
+              {/* Form Section */}
+              <View style={sharedStyles.form}>
+                <View style={sharedStyles.inputGroup}>
+                  <Text style={sharedStyles.label}>Name</Text>
+                  <View style={[sharedStyles.inputContainer, nameFocused && sharedStyles.inputContainerActive]}>
+                    <Ionicons name="person-outline" size={18} color={currentTheme.textTertiary} style={sharedStyles.inputIcon} />
+                    <TextInput
+                      style={sharedStyles.input}
+                      placeholder="Enter your full name"
+                      placeholderTextColor={currentTheme.inputPlaceholder}
+                      value={name}
+                      onChangeText={setName}
+                      onFocus={() => setNameFocused(true)}
+                      onBlur={() => setNameFocused(false)}
+                      autoCapitalize="words"
+                      autoCorrect={false}
+                      multiline={false}
+                      scrollEnabled={false}
+                      textAlignVertical="center"
+                    />
+                  </View>
+                </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="••••••"
-                  placeholderTextColor="#9ca3af"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                />
+                <View style={sharedStyles.inputGroup}>
+                  <Text style={sharedStyles.label}>Email</Text>
+                  <View style={[sharedStyles.inputContainer, emailFocused && sharedStyles.inputContainerActive]}>
+                    <Ionicons name="mail-outline" size={18} color={currentTheme.textTertiary} style={sharedStyles.inputIcon} />
+                    <TextInput
+                      style={sharedStyles.input}
+                      placeholder="demo@email.com"
+                      placeholderTextColor={currentTheme.inputPlaceholder}
+                      value={email}
+                      onChangeText={setEmail}
+                      onFocus={() => setEmailFocused(true)}
+                      onBlur={() => setEmailFocused(false)}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      multiline={false}
+                      scrollEnabled={false}
+                      textAlignVertical="center"
+                    />
+                  </View>
+                </View>
+
+                <View style={sharedStyles.inputGroup}>
+                  <Text style={sharedStyles.label}>Password</Text>
+                  <View style={[sharedStyles.inputContainer, passwordFocused && sharedStyles.inputContainerActive]}>
+                    <Ionicons name="lock-closed-outline" size={18} color={currentTheme.textTertiary} style={sharedStyles.inputIcon} />
+                    <TextInput
+                      style={sharedStyles.input}
+                      placeholder="Enter your password"
+                      placeholderTextColor={currentTheme.inputPlaceholder}
+                      value={password}
+                      onChangeText={setPassword}
+                      onFocus={() => setPasswordFocused(true)}
+                      onBlur={() => setPasswordFocused(false)}
+                      secureTextEntry={!showPassword}
+                      multiline={false}
+                      scrollEnabled={false}
+                      textAlignVertical="center"
+                    />
+                    <TouchableOpacity
+                      style={sharedStyles.eyeButton}
+                      onPress={() => setShowPassword(!showPassword)}
+                    >
+                      <Ionicons 
+                        name={showPassword ? "eye" : "eye-off"} 
+                        size={18} 
+                        color={currentTheme.textTertiary} 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={sharedStyles.inputGroup}>
+                  <Text style={sharedStyles.label}>Confirm Password</Text>
+                  <View style={[sharedStyles.inputContainer, confirmPasswordFocused && sharedStyles.inputContainerActive]}>
+                    <Ionicons name="lock-closed-outline" size={18} color={currentTheme.textTertiary} style={sharedStyles.inputIcon} />
+                    <TextInput
+                      style={sharedStyles.input}
+                      placeholder="Confirm your password"
+                      placeholderTextColor={currentTheme.inputPlaceholder}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      onFocus={() => setConfirmPasswordFocused(true)}
+                      onBlur={() => setConfirmPasswordFocused(false)}
+                      secureTextEntry={!showConfirmPassword}
+                      multiline={false}
+                      scrollEnabled={false}
+                      textAlignVertical="center"
+                    />
+                    <TouchableOpacity
+                      style={sharedStyles.eyeButton}
+                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      <Ionicons 
+                        name={showConfirmPassword ? "eye" : "eye-off"} 
+                        size={18} 
+                        color={currentTheme.textTertiary} 
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(!showPassword)}
+                  style={[sharedStyles.primaryButton, isLoading && sharedStyles.buttonDisabled]}
+                  onPress={handleRegister}
+                  disabled={isLoading}
                 >
-                  <Ionicons 
-                    name={showPassword ? "eye" : "eye-off"} 
-                    size={20} 
-                    color="#4ade80" 
-                  />
+                  <Text style={sharedStyles.buttonText}>
+                    {isLoading ? 'Creating Account...' : 'Create Account'}
+                  </Text>
                 </TouchableOpacity>
               </View>
-            </View>
 
-            {/* Only show confirm password if passwords don't match or if it's empty */}
-            {(!passwordsMatch || shouldShowConfirmPassword) && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={styles.passwordInput}
-                    placeholder="••••••"
-                    placeholderTextColor="#9ca3af"
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={!showConfirmPassword}
-                  />
-                  <TouchableOpacity
-                    style={styles.eyeButton}
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    <Ionicons 
-                      name={showConfirmPassword ? "eye" : "eye-off"} 
-                      size={20} 
-                      color="#4ade80" 
-                    />
-                  </TouchableOpacity>
+              {/* Footer */}
+              <View style={sharedStyles.footer}>
+                <View style={styles.footerContent}>
+                  <View style={styles.socialButtonsContainer}>
+                    <View style={styles.socialButtonLeftContainer}>
+                      <TouchableOpacity style={styles.socialButtonLeft}>
+                        <Ionicons name="logo-facebook" size={24} color="#1877f2" />
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.greyText}>
+                      {"   or continue with   "}
+                    </Text>
+                    <View style={styles.socialButtonRightContainer}>
+                      <TouchableOpacity style={styles.socialButtonRight}>
+                        <Ionicons name="logo-google" size={24} color="#ea4335" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  <Text style={sharedStyles.footerText}>
+                    Already have an Account? {' '}
+                    <Link href="/(auth)/login">
+                      <Text style={sharedStyles.linkText}>Login</Text>
+                    </Link>
+                  </Text>
                 </View>
               </View>
-            )}
-
-            <TouchableOpacity
-              style={[styles.signUpButton, isLoading && styles.buttonDisabled]}
-              onPress={handleRegister}
-              disabled={isLoading}
-            >
-              <Text style={styles.signUpButtonText}>
-                {isLoading ? 'Creating Account...' : 'Sign Up'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Social Section - This will be pushed down properly */}
-          <View style={styles.socialSection}>
-            <View style={styles.orSection}>
-              <Text style={styles.orText}>Or Sign up with</Text>
             </View>
-            <View style={styles.socialButtons}>
-              <SocialButton provider="facebook" />
-              <SocialButton provider="google" />
-            </View>
-          </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Already have an account?{' '}
-              <Link href="/(auth)/login">
-                <Text style={styles.signInLink}>Sign In</Text>
-              </Link>
-            </Text>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFFFFF', // Full white background
   },
   keyboardAvoidingView: {
     flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
     paddingHorizontal: 24,
-    paddingVertical: 40,
+    paddingVertical: 20,
   },
-  content: {
+  contentContainer: {
     flex: 1,
-    justifyContent: 'center',
-  },
-  backButton: {
-    alignSelf: 'flex-start',
-    padding: 8,
-    marginBottom: 20,
-  },
-  header: {
-    marginBottom: 40,
-    alignItems: 'center',
+    justifyContent: 'flex-end',
+    width: '100%',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#4ade80',
+    color: currentTheme.textPrimary,
+    marginBottom: 32,
+    textAlign: 'left', // Left align
+  },
+  footerContent: {
+    width: '100%',
+  },
+  greyText: {
+    fontSize: 14,
+    color: '#6b7280',
     textAlign: 'center',
   },
-  form: {
-    marginBottom: 32,
-  },
-  formContainer: {
-    marginBottom: 40,
-  },
-  inputGroup: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 16,
-    color: '#374151',
-    fontWeight: '500',
-    marginBottom: 12,
-  },
-  input: {
-    backgroundColor: '#f9fafb',
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-    fontSize: 16,
-    color: '#374151',
-    borderRadius: 12,
-    borderWidth: 0,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  passwordContainer: {
-    position: 'relative',
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  passwordInput: {
-    backgroundColor: 'transparent',
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-    paddingRight: 50,
-    fontSize: 16,
-    color: '#374151',
-    borderWidth: 0,
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: 16,
-    top: 18,
-  },
-  passwordMatchIndicator: {
+  socialButtonsContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f0fdf4',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    width: '100%',
+    marginBottom: 30,
   },
-  passwordMatchText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#16a34a',
-    fontWeight: '500',
+  socialButtonLeftContainer: {
+    alignItems: 'flex-start',
   },
-  signUpButton: {
-    backgroundColor: '#4ade80',
-    paddingVertical: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 16,
-    shadowColor: '#4ade80',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+  socialButtonRightContainer: {
+    alignItems: 'flex-end',
   },
-  buttonDisabled: {
-    backgroundColor: '#9ca3af',
-  },
-  signUpButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  socialSection: {
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  orSection: {
-    alignItems: 'center',
-    marginVertical: 16,
-    position: 'relative',
-  },
-  orText: {
-    fontSize: 14,
-    color: '#9ca3af',
+  socialButtonLeft: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 16,
-    zIndex: 1,
-  },
-  socialButtons: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    marginBottom: 40,
-  },
-  footer: {
     alignItems: 'center',
-    paddingBottom: 12,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
   },
-  footerText: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  signInLink: {
-    color: '#4ade80',
-    fontWeight: '600',
+  socialButtonRight: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
   },
 });
