@@ -7,6 +7,7 @@ import productSlice from './slices/productSlice';
 import snackbarSlice from './slices/snackbarSlice';
 import { authApi } from './api/authApi';
 import { userApi } from './api/userApi';
+import { vendorApi } from './api/vendorApi';
 import { authMiddleware } from './middleware';
 
 const persistConfig = {
@@ -21,6 +22,7 @@ const rootReducer = combineReducers({
   snackbar: snackbarSlice,
   [authApi.reducerPath]: authApi.reducer,
   [userApi.reducerPath]: userApi.reducer,
+  [vendorApi.reducerPath]: vendorApi.reducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -32,7 +34,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/FLUSH', 'persist/REHYDRATE', 'persist/PAUSE', 'persist/PERSIST', 'persist/PURGE', 'persist/REGISTER'],
       },
-    }).concat(authApi.middleware, userApi.middleware, authMiddleware),
+    }).concat(authApi.middleware, userApi.middleware, vendorApi.middleware, authMiddleware),
 });
 
 export const persistor = persistStore(store);

@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../index';
 import { authUrl } from '../../config/apiBaseUrl';
+import { User } from '../slices/authSlice';
 
 interface LoginRequest {
   email: string;
@@ -14,11 +15,7 @@ interface RegisterRequest {
 }
 
 interface AuthResponse {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
+  user: User;
   token: string;
   message: string;
 }
@@ -53,7 +50,7 @@ export const authApi = createApi({
       }),
       invalidatesTags: ['Auth'],
     }),
-    verifyToken: builder.query<{ user: any }, void>({
+    verifyToken: builder.query<{ user: User }, void>({
       query: () => '/verify',
       providesTags: ['Auth'],
     }),

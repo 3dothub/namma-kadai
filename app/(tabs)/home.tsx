@@ -9,9 +9,19 @@ import { AddProductModal } from '../../components/AddProductModal';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import * as Animatable from 'react-native-animatable';
-import { Product, Vendor, CartItem, toggleFavorite, addToCart, removeFromCart, updateCartItemQuantity, clearCart } from '../../store/slices/productSlice';
-import { showSnackbar, hideSnackbar } from '../../store/slices/snackbarSlice';
+import { Vendor, Product, getVendorMainCategory, isVendorOpen, getVendorImage, getProductMainImage, isProductAvailable, formatProductUnit, getProductVendorId } from '../../store/api/vendorApi';
+import { CartItem } from '../../store/slices/productSlice';
+import { 
+  addProductToCart, 
+  removeProductFromCart, 
+  updateCartItemQuantity, 
+  clearCart,
+  toggleFavorite 
+} from '../../store/slices/productSlice';
+import { showSnackbar } from '../../store/slices/snackbarSlice';
 import { subscribeToAddProduct } from './_layout';
+import { useLocationBasedVendors } from '../../hooks/useLocationBasedVendors';
+import { useVendorProducts } from '../../hooks/useVendorProducts';
 
 const { width } = Dimensions.get('window');
 
@@ -19,21 +29,22 @@ export default function HomeScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.auth.user);
-  const productState = useSelector((state: RootState) => state.products);
-  const vendors = productState?.vendors || [];
-  const products = productState?.products || [];
-  const cart = productState?.cart || [];
+  const cart = useSelector((state: RootState) => state.products.cart);
+  const { vendors, nearbyVendors, isLoading, hasLocation } = useLocationBasedVendors();
   
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(vendors[0] || null);
+  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showProductDetail, setShowProductDetail] = useState<boolean>(false);
   const [showCartModal, setShowCartModal] = useState<boolean>(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState<boolean>(false);
   const [showAddProductModal, setShowAddProductModal] = useState<boolean>(false);
   
+  const { products: vendorProducts, isLoading: isLoadingProducts } = useVendorProducts(selectedVendor?._id || null);
+  
   // Auto-select first vendor when vendors change
   useEffect(() => {
+    console.log('Vendors updated:', vendors);
     if (vendors.length > 0 && !selectedVendor) {
       setSelectedVendor(vendors[0]);
     }
@@ -51,23 +62,25 @@ export default function HomeScreen() {
   );
 
   const addToCartHandler = (product: Product) => {
-    dispatch(addToCart(product));
+    dispatch(addProductToCart({ product, quantity: 1 }));
     dispatch(showSnackbar({ message: `${product.name} added to cart!`, type: 'success' }));
   };
 
-  const removeFromCartHandler = (productId: number) => {
-    dispatch(removeFromCart(productId));
+  const removeFromCartHandler = (productId: string) => {
+    dispatch(removeProductFromCart(productId));
     dispatch(showSnackbar({ message: 'Item removed from cart', type: 'info' }));
 
     // Close cart modal if cart becomes empty
     if (cart.length === 1) {
       setShowCartModal(false);
     }
-  };  const updateQuantity = (productId: number, quantity: number) => {
+  };
+
+  const updateQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCartHandler(productId);
     } else {
-      dispatch(updateCartItemQuantity({ id: productId, quantity }));
+      dispatch(updateCartItemQuantity({ productId, quantity }));
     }
   };
 
@@ -79,34 +92,46 @@ export default function HomeScreen() {
     return cart.reduce((total, item) => total + item.quantity, 0);
   };
 
-  const handleToggleFavorite = (productId: number) => {
-    const product = products.find(p => p.id === productId);
-    const willBeFavorite = !product?.isFavorite;
-    
+  const handleToggleFavorite = (productId: string) => {
     dispatch(toggleFavorite(productId));
+    const favorites = useSelector((state: RootState) => state.products.favorites);
+    const isFavorite = favorites.some(fav => fav._id === productId);
+    
     dispatch(showSnackbar({
-      message: willBeFavorite ? 'Added to favorites' : 'Removed from favorites',
+      message: isFavorite ? 'Removed from favorites' : 'Added to favorites',
       type: 'success'
     }));
   };
 
   const handleCheckout = () => {
-    debugger;
     setShowCartModal(false);
     if (!user) {
       dispatch(showSnackbar({ message: 'Please login to proceed', type: 'info' }));
-      // Navigate to login screen
       router.push('/(auth)/login');
       return;
     }
     setShowCheckoutModal(true);
-
   };
 
   const filteredVendors = vendors.filter((vendor: Vendor) => 
     vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vendor.category.toLowerCase().includes(searchQuery.toLowerCase())
+    vendor.shopDetails.categories.some(category => 
+      category.toLowerCase().includes(searchQuery.toLowerCase())
+    ) ||
+    vendor.shopDetails.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Show loading state if location is being fetched
+  if (!hasLocation) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading nearby vendors...</Text>
+          <Text style={styles.loadingSubtext}>Please allow location access to see vendors in your area</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -146,21 +171,34 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Vendors</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.vendorsScroll}>
-            {filteredVendors.map((vendor: Vendor) => (
+            {filteredVendors.map((vendor: Vendor, id) => (
               <TouchableOpacity
-                key={vendor.id}
-                style={[styles.vendorCard, selectedVendor?.id === vendor.id && styles.selectedVendorCard]}
-                onPress={() => setSelectedVendor(selectedVendor?.id === vendor.id ? null : vendor)}
+                key={id}
+                style={[styles.vendorCard, selectedVendor?._id === vendor._id && styles.selectedVendorCard]}
+                onPress={() => setSelectedVendor(selectedVendor?._id === vendor._id ? null : vendor)}
               >
                 <View style={styles.vendorIconContainer}>
                   <Image
-                    source={require('../../assets/icon.png')}
+                    source={{ uri: getVendorImage(vendor) }}
                     style={styles.vendorIcon}
                     resizeMode="cover"
+                    defaultSource={require('../../assets/icon.png')}
                   />
+                  {isVendorOpen(vendor) && (
+                    <View style={styles.openIndicator}>
+                      <Text style={styles.openText}>OPEN</Text>
+                    </View>
+                  )}
                 </View>
                 <Text style={styles.vendorName}>{vendor.name}</Text>
-                <Text style={styles.vendorCategory}>{vendor.category}</Text>
+                <Text style={styles.vendorCategory}>{getVendorMainCategory(vendor)}</Text>
+                {vendor.deliverySettings.freeDeliveryAbove === 0 ? (
+                  <Text style={styles.freeDelivery}>Free Delivery</Text>
+                ) : (
+                  <Text style={styles.deliveryInfo}>
+                    Free delivery above ₹{vendor.deliverySettings.freeDeliveryAbove}
+                  </Text>
+                )}
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -171,8 +209,8 @@ export default function HomeScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{selectedVendor.name} - Products</Text>
             <View style={styles.productsGrid}>
-              {selectedVendor.products.map((product) => (
-                <View key={product.id} style={styles.productCard}>
+              {vendorProducts.map((product) => (
+                <View key={product._id} style={styles.productCard}>
                   <TouchableOpacity 
                     onPress={() => {
                       setSelectedProduct(product);
@@ -181,39 +219,61 @@ export default function HomeScreen() {
                   >
                     <View style={styles.productIconContainer}>
                       <Image
-                        source={require('../../assets/icon.png')}
+                        source={{ uri: getProductMainImage(product) }}
                         style={styles.productIcon}
                         resizeMode="cover"
+                        defaultSource={require('../../assets/icon.png')}
                       />
+                      {!isProductAvailable(product) && (
+                        <View style={styles.unavailableOverlay}>
+                          <Text style={styles.unavailableText}>
+                            {product.stock === 0 ? 'Out of Stock' : 'Unavailable'}
+                          </Text>
+                        </View>
+                      )}
+                      {product.stock > 0 && product.stock <= 10 && (
+                        <View style={styles.lowStockIndicator}>
+                          <Text style={styles.lowStockText}>Only {product.stock} left</Text>
+                        </View>
+                      )}
                     </View>
                     <View style={styles.productInfo}>
                       <Text style={styles.productName}>{product.name}</Text>
+                      <Text style={styles.productUnit}>{formatProductUnit(product)}</Text>
                       <View style={styles.priceContainer}>
                         {product.offerPrice && (
                           <Text style={styles.originalPrice}>₹{product.price}</Text>
                         )}
                         <Text style={styles.productPrice}>₹{product.offerPrice || product.price}</Text>
                       </View>
+                      <Text style={styles.deliveryTimeProduct}>30-45 mins</Text>
                     </View>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.favoriteButton}
-                    onPress={() => handleToggleFavorite(product.id)}
+                    onPress={() => handleToggleFavorite(product._id)}
                   >
                     <Ionicons 
-                      name={product.isFavorite ? "heart" : "heart-outline"} 
+                      name="heart-outline"
                       size={16} 
-                      color={product.isFavorite ? "#EF4444" : "#6B7280"} 
+                      color="#6B7280"
                     />
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.addToCartButton}
-                    onPress={() => addToCartHandler(product)}
+                    style={[styles.addToCartButton, !isProductAvailable(product) && styles.addToCartButtonDisabled]}
+                    onPress={() => isProductAvailable(product) && addToCartHandler(product)}
+                    disabled={!isProductAvailable(product)}
                   >
                     <Ionicons name="add" size={16} color="#fff" />
                   </TouchableOpacity>
                 </View>
               ))}
+              
+              {vendorProducts.length === 0 && !isLoadingProducts && (
+                <View style={styles.emptyProducts}>
+                  <Text style={styles.emptyProductsText}>No products available</Text>
+                </View>
+              )}
             </View>
           </View>
         )}
@@ -259,12 +319,12 @@ export default function HomeScreen() {
                   <View style={styles.modalHeaderButtons}>
                     <TouchableOpacity 
                       style={styles.favoriteButtonLarge}
-                      onPress={() => handleToggleFavorite(selectedProduct.id)}
+                      onPress={() => handleToggleFavorite(selectedProduct._id)}
                     >
                       <Ionicons 
-                        name={selectedProduct.isFavorite ? "heart" : "heart-outline"} 
+                        name="heart-outline"
                         size={24} 
-                        color={selectedProduct.isFavorite ? "#EF4444" : "#6B7280"} 
+                        color="#6B7280"
                       />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setShowProductDetail(false)}>
@@ -274,12 +334,19 @@ export default function HomeScreen() {
                 </View>
               <View style={styles.productDetailIconContainer}>
                 <Image
-                  source={require('../../assets/icon.png')}
+                  source={{ uri: getProductMainImage(selectedProduct) }}
                   style={styles.productDetailImage}
                   resizeMode="cover"
+                  defaultSource={require('../../assets/icon.png')}
                 />
               </View>
               <View style={styles.productDetailInfo}>
+                <View style={styles.productStockInfo}>
+                  <Text style={styles.productUnit}>{formatProductUnit(selectedProduct)}</Text>
+                  <Text style={styles.stockText}>
+                    {selectedProduct.stock > 0 ? `${selectedProduct.stock} in stock` : 'Out of stock'}
+                  </Text>
+                </View>
                 <View style={styles.priceContainer}>
                   {selectedProduct.offerPrice && (
                     <Text style={styles.originalPriceLarge}>₹{selectedProduct.price}</Text>
@@ -287,13 +354,11 @@ export default function HomeScreen() {
                   <Text style={styles.productDetailPrice}>₹{selectedProduct.offerPrice || selectedProduct.price}</Text>
                 </View>
                 <Text style={styles.productDetailDescription}>
-                  {selectedProduct.description || `High quality ${selectedProduct.name.toLowerCase()} available for immediate delivery.`}
+                  {selectedProduct.description}
                 </Text>
-                {selectedProduct.deliveryTime && (
-                  <Text style={styles.deliveryTime}>
-                    <Ionicons name="time-outline" size={16} color="#22C55E" /> {selectedProduct.deliveryTime}
-                  </Text>
-                )}
+                <Text style={styles.deliveryTime}>
+                  <Ionicons name="time-outline" size={16} color="#22C55E" /> 30-45 mins
+                </Text>
                 <TouchableOpacity
                   style={styles.addToCartButtonLarge}
                   onPress={() => {
@@ -333,7 +398,7 @@ export default function HomeScreen() {
             </View>
           <ScrollView style={styles.cartModalContent}>
             {cart.map((item) => (
-              <View key={item.id} style={styles.cartModalItem}>
+              <View key={item._id} style={styles.cartModalItem}>
                 <View style={styles.cartModalItemIcon}>
                   <Ionicons name="cube-outline" size={30} color="#22C55E" />
                 </View>
@@ -344,21 +409,21 @@ export default function HomeScreen() {
                 <View style={styles.quantityControls}>
                   <TouchableOpacity 
                     style={styles.quantityButton}
-                    onPress={() => updateQuantity(item.id, item.quantity - 1)}
+                    onPress={() => updateQuantity(item._id, item.quantity - 1)}
                   >
                     <Text style={styles.quantityButtonText}>-</Text>
                   </TouchableOpacity>
                   <Text style={styles.quantityText}>{item.quantity}</Text>
                   <TouchableOpacity 
                     style={styles.quantityButton}
-                    onPress={() => updateQuantity(item.id, item.quantity + 1)}
+                    onPress={() => updateQuantity(item._id, item.quantity + 1)}
                   >
                     <Text style={styles.quantityButtonText}>+</Text>
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity 
                   style={styles.deleteButton}
-                  onPress={() => removeFromCartHandler(item.id)}
+                  onPress={() => removeFromCartHandler(item._id)}
                 >
                   <Ionicons name="trash-outline" size={20} color="#EF4444" />
                 </TouchableOpacity>
@@ -404,10 +469,10 @@ export default function HomeScreen() {
                 {/* List all products in cart */}
                 <ScrollView style={styles.checkoutItemsList}>
                   {cart.map((item) => (
-                    <View key={item.id} style={styles.checkoutItem}>
+                    <View key={item._id} style={styles.checkoutItem}>
                       <View style={styles.checkoutItemInfo}>
                         <Text style={styles.checkoutItemName}>{item.name}</Text>
-                        <Text style={styles.checkoutItemVendor}>{item.vendorName}</Text>
+                        <Text style={styles.checkoutItemVendor}>{getProductVendorId(item)}</Text>
                       </View>
                       <View style={styles.checkoutItemQuantity}>
                         <Text style={styles.checkoutQuantityText}>x{item.quantity}</Text>
@@ -456,6 +521,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
     paddingBottom: 0,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   modalOverlay: {
     flex: 1,
@@ -1043,5 +1127,111 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  openIndicator: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  openText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '700',
+  },
+  freeDelivery: {
+    fontSize: 10,
+    color: '#22C55E',
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  deliveryInfo: {
+    fontSize: 9,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  lowStockIndicator: {
+    position: 'absolute',
+    bottom: 4,
+    left: 4,
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  lowStockText: {
+    color: '#fff',
+    fontSize: 8,
+    fontWeight: '600',
+  },
+  productUnit: {
+    fontSize: 11,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  vendorDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  deliveryTimeProduct: {
+    fontSize: 12,
+    color: '#22C55E',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  unavailableOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  unavailableText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  addToCartButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  emptyProducts: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyProductsText: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  productStockInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  stockText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
   },
 });

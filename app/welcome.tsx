@@ -8,10 +8,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 import { Ionicons } from '@expo/vector-icons';
 import { currentTheme } from '../constants/Colors';
 
 export default function WelcomeScreen() {
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+
+  const handleExplore = () => {
+    if (isAuthenticated) {
+      // If user is logged in, try to go to dashboard (AppWrapper will handle location check)
+      router.push('/(tabs)/home');
+    } else {
+      // If not logged in, show login first
+      router.push('/(auth)/login');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor={currentTheme.background} barStyle="dark-content" />
@@ -22,25 +36,31 @@ export default function WelcomeScreen() {
           <View style={styles.textContainer}>
             <Text style={styles.title}>Welcome</Text>
             <Text style={styles.subtitle}>
-              Lorem ipsum dolor sit amet, consectetur{'\n'}
-              adipiscing elit.
+              {isAuthenticated 
+                ? 'Discover amazing products and services in your area'
+                : 'Discover local stores and products near you.\nSign in for a personalized experience.'
+              }
             </Text>
           </View>
           
           {/* Bottom Links */}
           <View style={styles.bottomLinksContainer}>
-            <Pressable 
-              style={styles.linkButton}
-              onPress={() => router.push('/(auth)/login')}
-            >
-              <Text style={styles.linkText}>Sign In</Text>
-            </Pressable>
+            {!isAuthenticated && (
+              <Pressable 
+                style={styles.linkButton}
+                onPress={() => router.push('/(auth)/login')}
+              >
+                <Text style={styles.linkText}>Sign In</Text>
+              </Pressable>
+            )}
             
             <Pressable 
               style={styles.linkButtonPrimary}
-              onPress={() => router.push('/(tabs)/home')}
+              onPress={handleExplore}
             >
-              <Text style={styles.linkTextPrimary}>Explore</Text>
+              <Text style={styles.linkTextPrimary}>
+                {isAuthenticated ? 'Explore Dashboard' : 'Explore Now'}
+              </Text>
               <Ionicons name="arrow-forward" size={20} color={currentTheme.primary} />
             </Pressable>
           </View>
@@ -85,6 +105,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingBottom: 40,
+    gap: 16,
   },
   linkButton: {
     paddingVertical: 12,

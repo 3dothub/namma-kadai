@@ -1,11 +1,33 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { authApi } from '../api/authApi';
 
+export interface UserAddress {
+  label: string;
+  street: string;
+  city: string;
+  state: string;
+  pincode: string;
+  location: {
+    lat: number;
+    lng: number;
+  };
+}
+
+export interface CartItem {
+  productId: string;
+  quantity: number;
+}
 
 export interface User {
-  id: string;
-  email: string;
+  _id: string;
   name: string;
+  email: string;
+  phone: string;
+  addresses: UserAddress[];
+  cart: CartItem[];
+  favorites: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AuthState {
@@ -14,6 +36,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  hasLocationAccess: boolean;
 }
 
 const initialState: AuthState = {
@@ -22,6 +45,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   isLoading: false,
   error: null,
+  hasLocationAccess: false,
 };
 
 const authSlice = createSlice({
@@ -51,6 +75,62 @@ const authSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    },
+    updateUserData: (state, action: PayloadAction<Partial<User>>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+      }
+    },
+    setLocationAccess: (state, action: PayloadAction<boolean>) => {
+      state.hasLocationAccess = action.payload;
+    },
+    addUserAddress: (state, action: PayloadAction<UserAddress>) => {
+      if (state.user) {
+        state.user.addresses.push(action.payload);
+      }
+    },
+    updateUserAddress: (state, action: PayloadAction<{ index: number; address: UserAddress }>) => {
+      if (state.user && state.user.addresses[action.payload.index]) {
+        state.user.addresses[action.payload.index] = action.payload.address;
+      }
+    },
+    removeUserAddress: (state, action: PayloadAction<number>) => {
+      if (state.user) {
+        state.user.addresses.splice(action.payload, 1);
+      }
+    },
+    addToCart: (state, action: PayloadAction<CartItem>) => {
+      if (state.user) {
+        const existingItem = state.user.cart.find(item => item.productId === action.payload.productId);
+        if (existingItem) {
+          existingItem.quantity += action.payload.quantity;
+        } else {
+          state.user.cart.push(action.payload);
+        }
+      }
+    },
+    removeFromCart: (state, action: PayloadAction<string>) => {
+      if (state.user) {
+        state.user.cart = state.user.cart.filter(item => item.productId !== action.payload);
+      }
+    },
+    updateCartQuantity: (state, action: PayloadAction<{ productId: string; quantity: number }>) => {
+      if (state.user) {
+        const item = state.user.cart.find(item => item.productId === action.payload.productId);
+        if (item) {
+          item.quantity = action.payload.quantity;
+        }
+      }
+    },
+    toggleFavorite: (state, action: PayloadAction<string>) => {
+      if (state.user) {
+        const index = state.user.favorites.indexOf(action.payload);
+        if (index === -1) {
+          state.user.favorites.push(action.payload);
+        } else {
+          state.user.favorites.splice(index, 1);
+        }
+      }
     },
   },
   extraReducers: (builder) => {
@@ -119,5 +199,20 @@ const authSlice = createSlice({
   },
 });
 
-export const { loginStart, loginSuccess, loginFailure, logout, clearError } = authSlice.actions;
+export const { 
+  loginStart, 
+  loginSuccess, 
+  loginFailure, 
+  logout, 
+  clearError,
+  updateUserData,
+  setLocationAccess,
+  addUserAddress,
+  updateUserAddress,
+  removeUserAddress,
+  addToCart,
+  removeFromCart,
+  updateCartQuantity,
+  toggleFavorite
+} = authSlice.actions;
 export default authSlice.reducer;

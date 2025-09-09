@@ -8,19 +8,16 @@ import {
   Platform,
   StyleSheet,
   StatusBar,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
 import { useRegisterMutation } from '../../store/api/authApi';
-import { useUpdateLocationMutation } from '../../store/api/userApi';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
 import { showSnackbar } from '../../store/slices/snackbarSlice';
 import { Ionicons } from '@expo/vector-icons';
 import { currentTheme } from '../../constants/Colors';
 import { sharedStyles } from '../../constants/SharedStyles';
-import { getCurrentLocation, requestLocationPermission } from '../../services/locationService';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
@@ -35,73 +32,10 @@ export default function RegisterScreen() {
   const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
   
   const [register, { isLoading }] = useRegisterMutation();
-  const [updateLocation] = useUpdateLocationMutation();
   const dispatch = useDispatch();
 
   // Check if passwords match
   const passwordsMatch = password && confirmPassword && password === confirmPassword;
-
-  const handleLocationAccess = async (): Promise<void> => {
-    try {
-      const hasPermission = await requestLocationPermission();
-      
-      if (hasPermission) {
-        const location = await getCurrentLocation();
-        
-        if (location) {
-          await updateLocation({
-            lat: location.lat,
-            lng: location.lng,
-          }).unwrap();
-          
-          dispatch(showSnackbar({ 
-            message: 'Location updated successfully!', 
-            type: 'success' 
-          }));
-        } else {
-          dispatch(showSnackbar({ 
-            message: 'Could not get current location', 
-            type: 'info' 
-          }));
-        }
-      } else {
-        dispatch(showSnackbar({ 
-          message: 'Location permission denied', 
-          type: 'info' 
-        }));
-      }
-    } catch (error) {
-      console.error('Location error:', error);
-      dispatch(showSnackbar({ 
-        message: 'Failed to update location', 
-        type: 'error' 
-      }));
-    }
-  };
-
-  const showLocationPermissionDialog = (): void => {
-    Alert.alert(
-      'Location Access',
-      'We need access to your location to provide better services and find nearby stores.',
-      [
-        {
-          text: 'Not Now',
-          style: 'cancel',
-          onPress: () => {
-            // Proceed to home without location
-            router.replace('/(tabs)/home');
-          }
-        },
-        {
-          text: 'Allow',
-          onPress: async () => {
-            await handleLocationAccess();
-            router.replace('/(tabs)/home');
-          }
-        }
-      ]
-    );
-  };
 
   const handleRegister = async () => {
     if (!name || !email || !password || !confirmPassword) {
@@ -126,9 +60,18 @@ export default function RegisterScreen() {
       const successMessage = response.message || 'Registration successful!';
       dispatch(showSnackbar({ message: successMessage, type: 'success' }));
       
-      // Show location permission dialog after successful registration
+      // Check if user has location data after registration
       setTimeout(() => {
-        showLocationPermissionDialog();
+        const hasLocationData = response.user.addresses?.some(
+          address => address.location && address.location.lat && address.location.lng
+        );
+        
+        if (hasLocationData) {
+          router.replace('/(tabs)/home');
+        } else {
+          // Redirect to welcome where user can explore (which will trigger location modal)
+          router.replace('/welcome');
+        }
       }, 1500);
     } catch (error: any) {
       const errorMessage = error?.data?.message || error?.message || 'Registration failed';
