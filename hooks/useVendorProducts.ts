@@ -15,7 +15,7 @@ export const useVendorProducts = (vendorId: string | null) => {
     { skip: !vendorId }
   );
 
-  useEffect(() => {
+  useEffect(() => {    
     if (data?.products) {
       setProducts(data.products);
     } else {

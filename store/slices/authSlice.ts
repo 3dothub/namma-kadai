@@ -68,10 +68,13 @@ const authSlice = createSlice({
       state.error = action.payload;
     },
     logout: (state) => {
+      // Reset all state to initial values to completely clear user data
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.isLoading = false;
       state.error = null;
+      state.hasLocationAccess = false;
     },
     clearError: (state) => {
       state.error = null;

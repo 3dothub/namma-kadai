@@ -8,16 +8,12 @@ import {
   Platform,
   StyleSheet,
   StatusBar,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, router } from "expo-router";
 import { useLoginMutation } from "../../store/api/authApi";
 import { useDispatch } from "react-redux";
-import {
-  loginStart,
-  loginSuccess,
-  loginFailure,
-} from "../../store/slices/authSlice";
 import { showSnackbar } from "../../store/slices/snackbarSlice";
 import { Ionicons } from "@expo/vector-icons";
 import { currentTheme } from "../../constants/Colors";
@@ -43,29 +39,30 @@ export default function LoginScreen() {
     }
 
     try {
-      dispatch(loginStart());
       const response = await login({ email, password }).unwrap();
-      dispatch(loginSuccess({ user: response.user, token: response.token }));
       const successMessage = response.message || "Login successful!";
       dispatch(showSnackbar({ message: successMessage, type: "success" }));
-      
+
       // Check if user has location data after login
+
       setTimeout(() => {
         const hasLocationData = response.user.addresses?.some(
-          address => address.location && address.location.lat && address.location.lng
+          (address) =>
+            address.location && address.location.lat && address.location.lng
         );
-        
+
         if (hasLocationData) {
           router.replace("/(tabs)/home");
         } else {
           // Redirect to welcome where user can explore (which will trigger location modal)
           router.replace("/welcome");
         }
-      }, 1500);
+      }, 500);
     } catch (error: any) {
       const errorMessage =
         error?.data?.message || error?.message || "Login failed";
-      dispatch(loginFailure(errorMessage));
+      console.log(error);
+
       dispatch(showSnackbar({ message: errorMessage, type: "error" }));
     }
   };
@@ -73,19 +70,16 @@ export default function LoginScreen() {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
-
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.keyboardAvoidingView}
+          >
       <SafeAreaView style={sharedStyles.content} edges={["top", "bottom"]}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboardAvoidingView}
-        >
-          <View style={styles.contentContainer}>
-            {/* Header */}
-            <View style={sharedStyles.header}>
-              <Text style={styles.title}>Sign in</Text>
-            </View>
-
-            {/* Form */}
+        <View style={styles.contentContainer}>
+          {/* Header */}
+          <View style={sharedStyles.header}>
+            <Text style={styles.title}>Sign in</Text>
+          </View>
             <View style={sharedStyles.form}>
               <View style={sharedStyles.inputGroup}>
                 <Text style={sharedStyles.label}>Email</Text>
@@ -204,9 +198,7 @@ export default function LoginScreen() {
                     <Ionicons name="logo-facebook" size={24} color="#1877f2" />
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.greyText}>
-                  {"   or continue with   "}
-                </Text>
+                <Text style={styles.greyText}>{"   or continue with   "}</Text>
                 <View style={styles.socialButtonRightContainer}>
                   <TouchableOpacity style={styles.socialButtonRight}>
                     <Ionicons name="logo-google" size={24} color="#ea4335" />
@@ -214,21 +206,20 @@ export default function LoginScreen() {
                 </View>
               </View>
             </View>
-
-            {/* Footer */}
-            <View style={sharedStyles.footer}>
-              <View style={styles.footerContent}>
-                <Text style={sharedStyles.footerText}>
-                  Don't have an Account?{" "}
-                  <Link href="/(auth)/register">
-                    <Text style={sharedStyles.linkText}>Sign up</Text>
-                  </Link>
-                </Text>
-              </View>
+          {/* Footer */}
+          <View style={sharedStyles.footer}>
+            <View style={styles.footerContent}>
+              <Text style={sharedStyles.footerText}>
+                Don't have an Account?{" "}
+                <Link href="/(auth)/register">
+                  <Text style={sharedStyles.linkText}>Sign up</Text>
+                </Link>
+              </Text>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </SafeAreaView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
@@ -238,10 +229,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF", // Full white background
   },
+  backgroundImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "50%", // Increased to better show wavy curve
+    width: "100%",
+    zIndex: 0,
+  },
   keyboardAvoidingView: {
     flex: 1,
     paddingHorizontal: 24,
     paddingVertical: 20,
+    zIndex: 1, // Ensure content is above background
   },
   contentContainer: {
     flex: 1,

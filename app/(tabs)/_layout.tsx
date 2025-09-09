@@ -64,23 +64,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="add"
-        options={{
-          title: '',
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.centerButton, focused && styles.centerButtonActive]}>
-              <Ionicons name="add" size={28} color="#fff" />
-            </View>
-          ),
-        }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-            handleAddPress();
-          },
-        }}
-      />
-      <Tabs.Screen
         name="order"
         options={{
           title: 'Order',

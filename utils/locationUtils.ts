@@ -1,6 +1,8 @@
 import { User } from '../store/slices/authSlice';
 
 export const hasUserLocationData = (user: User | null): boolean => {
+  // For unauthenticated users, we don't have user.addresses, 
+  // so this should return false to rely on store location
   if (!user || !user.addresses || user.addresses.length === 0) {
     return false;
   }
@@ -31,4 +33,10 @@ export const getUserCurrentLocation = (user: User | null) => {
   );
   
   return addressWithLocation ? addressWithLocation.location : null;
+};
+
+// Helper function to check if user has any form of location access
+// This checks both user data and store location for authenticated/unauthenticated users
+export const hasAnyLocationAccess = (user: User | null, storeLocation: any, hasLocationAccess: boolean): boolean => {
+  return hasUserLocationData(user) || !!storeLocation || hasLocationAccess;
 };

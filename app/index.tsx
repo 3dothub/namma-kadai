@@ -1,13 +1,17 @@
 import { Redirect } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { hasUserLocationData } from '../utils/locationUtils';
+import { hasAnyLocationAccess } from '../utils/locationUtils';
 
 export default function Index() {
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user, hasLocationAccess } = useSelector((state: RootState) => state.auth);
+  const { userLocation } = useSelector((state: RootState) => state.products);
   
-  // If user is authenticated and has location data, go directly to home
-  if (isAuthenticated && user && hasUserLocationData(user)) {
+  // Check if user has any form of location access
+  const hasLocation = hasAnyLocationAccess(user, userLocation, hasLocationAccess);
+  
+  // If user has location data, go directly to home
+  if (hasLocation) {
     return <Redirect href="/(tabs)/home" />;
   }
   

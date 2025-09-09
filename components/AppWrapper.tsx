@@ -10,7 +10,7 @@ import { setUserLocation } from '../store/slices/productSlice';
 import { showSnackbar, hideSnackbar } from '../store/slices/snackbarSlice';
 import { useUpdateLocationMutation } from '../store/api/userApi';
 import { getCurrentLocation, requestLocationPermission } from '../services/locationService';
-import { hasUserLocationData, getUserCurrentLocation } from '../utils/locationUtils';
+import { hasUserLocationData, getUserCurrentLocation, hasAnyLocationAccess } from '../utils/locationUtils';
 
 interface AppWrapperProps {
   children: React.ReactNode;
@@ -23,14 +23,15 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
   
   const { visible, message, type } = useSelector((state: RootState) => state.snackbar);
   const { user, isAuthenticated, hasLocationAccess } = useSelector((state: RootState) => state.auth);
+  const { userLocation } = useSelector((state: RootState) => state.products);
   
   const [updateLocation, { isLoading: isUpdatingLocation }] = useUpdateLocationMutation();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [locationRequired, setLocationRequired] = useState(false);
 
-  // Check if user has location data
+  // Check if user has any form of location data (user addresses, store location, or access granted)
   const hasLocationData = () => {
-    return hasUserLocationData(user);
+    return hasAnyLocationAccess(user, userLocation, hasLocationAccess);
   };
 
   // Check if current route requires location
@@ -43,13 +44,14 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
 
   // Navigation guard - redirect if location is required but not available
   useEffect(() => {
-    if (isAuthenticated && isLocationRequiredRoute() && !hasLocationData()) {
+    // Show location modal for location-required routes regardless of authentication status
+    if (isLocationRequiredRoute() && !hasLocationData() && !hasLocationAccess) {
       setLocationRequired(true);
       setShowLocationModal(true);
     } else {
       setLocationRequired(false);
     }
-  }, [isAuthenticated, segments, user]);
+  }, [isAuthenticated, segments, user, hasLocationAccess, userLocation]);
 
   // Load user location into product store when available
   useEffect(() => {
@@ -61,63 +63,58 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
     }
   }, [user, dispatch]);
 
-  // Show location modal for authenticated users without location on dashboard access
+  // Show location modal for users without location access
   useEffect(() => {
-    if (isAuthenticated && !hasLocationData() && !hasLocationAccess) {
+    // Show location modal for users without location data or access, regardless of authentication
+    if (!hasLocationData() && !hasLocationAccess) {
       const timer = setTimeout(() => {
         setShowLocationModal(true);
       }, 1000);
 
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, user, hasLocationAccess]);
+  }, [user, hasLocationAccess, userLocation]);
 
   const handleLocationRequest = async (): Promise<void> => {
     try {
-      console.log('Requesting location permission...');
-      const hasPermission = await requestLocationPermission();
-      console.log('Permission granted:', hasPermission);
-      
+      const hasPermission = await requestLocationPermission();      
       if (hasPermission) {
-        console.log('Getting current location...');
         const location = await getCurrentLocation();
-        console.log('Location received:', location);
         
         if (location) {
           try {
-            console.log('Updating location via API...');
-            // Update location via API
-            const result = await updateLocation({
-              lat: location.lat,
-              lng: location.lng,
-            }).unwrap();
-            console.log('API update successful:', result);
-            
-            // Update local state to mark location as accessed
-            dispatch(setLocationAccess(true));
-            
-            // Update product store with user location
+            // Update product store with user location for all users
             dispatch(setUserLocation(location));
             
-            // Add location to user's default address if they don't have any
-            if (user && (!user.addresses || user.addresses.length === 0)) {
-              const newAddress = {
-                label: 'Current Location',
-                street: '',
-                city: '',
-                state: '',
-                pincode: '',
-                location: {
-                  lat: location.lat,
-                  lng: location.lng,
-                },
-              };
+            // Only update user data via API if user is authenticated
+            if (isAuthenticated && user) {
+              const result = await updateLocation({
+                lat: location.lat,
+                lng: location.lng,
+              }).unwrap();
               
-              console.log('Adding location to user addresses...');
-              dispatch(updateUserData({
-                addresses: [newAddress],
-              }));
+              // Add location to user's default address if they don't have any
+              if (!user.addresses || user.addresses.length === 0) {
+                const newAddress = {
+                  label: 'Current Location',
+                  street: '',
+                  city: '',
+                  state: '',
+                  pincode: '',
+                  location: {
+                    lat: location.lat,
+                    lng: location.lng,
+                  },
+                };
+                
+                dispatch(updateUserData({
+                  addresses: [newAddress],
+                }));
+              }
             }
+            
+            // Mark location as accessed for all users (authenticated or not)
+            dispatch(setLocationAccess(true));
             
             dispatch(showSnackbar({ 
               message: 'Location updated successfully!', 
@@ -127,13 +124,22 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
             setShowLocationModal(false);
           } catch (apiError) {
             console.error('API error:', apiError);
-            dispatch(showSnackbar({ 
-              message: 'Failed to update location on server. Please try again.', 
-              type: 'error' 
-            }));
+            // For unauthenticated users, still allow location access even if API fails
+            if (!isAuthenticated) {
+              dispatch(setLocationAccess(true));
+              setShowLocationModal(false);
+              dispatch(showSnackbar({ 
+                message: 'Location access granted!', 
+                type: 'success' 
+              }));
+            } else {
+              dispatch(showSnackbar({ 
+                message: 'Failed to update location on server. Please try again.', 
+                type: 'error' 
+              }));
+            }
           }
         } else {
-          console.log('Could not get location');
           dispatch(showSnackbar({ 
             message: 'Could not get current location. Please try again.', 
             type: 'error' 

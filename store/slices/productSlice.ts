@@ -44,6 +44,9 @@ const productSlice = createSlice({
     setUserLocation: (state, action: PayloadAction<{ lat: number; lng: number }>) => {
       state.userLocation = action.payload;
     },
+    clearUserLocation: (state) => {
+      state.userLocation = null;
+    },
     setNearbyVendors: (state, action: PayloadAction<Vendor[]>) => {
       state.nearbyVendors = action.payload;
     },
@@ -104,6 +107,10 @@ const productSlice = createSlice({
       state.products = vendors.flatMap(vendor => vendor.products || []);
       state.userLocation = location;
     },
+    clearAllProductData: (state) => {
+      // Reset all product state to initial values
+      Object.assign(state, initialState);
+    },
   },
 });
 
@@ -111,6 +118,7 @@ export const {
   setVendors,
   setProducts,
   setUserLocation,
+  clearUserLocation,
   setNearbyVendors,
   setLoadingVendors,
   setLoadingProducts,
@@ -121,6 +129,7 @@ export const {
   toggleFavorite,
   setFavorites,
   loadLocationBasedData,
+  clearAllProductData,
 } = productSlice.actions;
 
 export default productSlice.reducer;

@@ -8,6 +8,7 @@ import {
   Platform,
   StyleSheet,
   StatusBar,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
@@ -84,11 +85,12 @@ export default function RegisterScreen() {
     <View style={styles.container}>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       
-      <SafeAreaView style={sharedStyles.content} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.content} edges={['top', 'bottom']}>
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardAvoidingView}
         >
+
           <View style={styles.contentContainer}>
             {/* Header */}
             <View style={sharedStyles.header}>
@@ -250,15 +252,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF', // Full white background
   },
-  keyboardAvoidingView: {
+  content: {
     flex: 1,
     paddingHorizontal: 24,
+  },
+  backgroundContainer: {
+    height: 300,
+    width: '100%',
+    marginHorizontal: -24, // Extend to screen edges
+    marginTop: -20, // Extend to top
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
     paddingVertical: 20,
   },
   contentContainer: {
     flex: 1,
     justifyContent: 'flex-end',
     width: '100%',
+    marginTop: -50, // Pull content up to overlap with green background
   },
   title: {
     fontSize: 32,

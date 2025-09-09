@@ -86,12 +86,10 @@ export default function NotificationScreen() {
 
   const handleNotificationPress = (notification: Notification) => {
     // Handle notification press - could navigate to relevant screen
-    console.log('Notification pressed:', notification);
   };
 
   const handleMarkAllRead = () => {
     // Handle mark all as read
-    console.log('Mark all as read');
   };
 
   return (

@@ -10,6 +10,7 @@ export default function MoreScreen() {
 
   const handleLogout = () => {
     dispatch(logout());
+    // Navigate to login screen
     router.replace('/(auth)/login');
   };
 
