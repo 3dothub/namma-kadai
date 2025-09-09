@@ -2,18 +2,29 @@
   "expo": {
     "name": "Namma Kadai",
     "slug": "namma-kadai",
-    "version": "1.0.0.a",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "privacy": "public",
+    "description": "Namma Kadai - Your local grocery and essentials delivery app. Order fresh groceries, daily essentials, and local products from nearby stores with fast delivery.",
+    "keywords": ["grocery", "delivery", "local", "essentials", "food", "shopping", "kadai"],
+    "primaryColor": "#22C55E",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#22C55E"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.threedotart.nammakadai",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "This app needs location access to show nearby stores and calculate delivery distance.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app needs location access to show nearby stores and calculate delivery distance."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +32,17 @@
         "backgroundColor": "#22C55E"
       },
       "package": "com.threedotart.namma_kadai",
-      "versionCode": 1
+      "versionCode": 1,
+      "compileSdkVersion": 34,
+      "targetSdkVersion": 34,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.threedotart.namma_kadai",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-router",

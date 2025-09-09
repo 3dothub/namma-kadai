@@ -23,13 +23,13 @@ import { getCurrentLocation, requestLocationPermission } from '../../services/lo
 import {
   ProductDetailModal,
   CartModal,
-  CheckoutModal,
   LocationRequestScreen,
   CartBottomSection,
   SearchHeader,
   VendorsSection,
   ProductsSection,
 } from '../../components/home';
+import { OrderSuccessAnimation } from '../../components/OrderSuccessAnimation';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -41,10 +41,11 @@ export default function HomeScreen() {
   
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
+  const [isVendorChanging, setIsVendorChanging] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showProductDetail, setShowProductDetail] = useState<boolean>(false);
   const [showCartModal, setShowCartModal] = useState<boolean>(false);
-  const [showCheckoutModal, setShowCheckoutModal] = useState<boolean>(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState<boolean>(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState<boolean>(false);
   
   const { products: vendorProducts, isLoading: isLoadingProducts, refetch: refetchVendorProducts } = useVendorProducts(selectedVendor?._id || null);
@@ -61,6 +62,16 @@ export default function HomeScreen() {
     }
   }, [selectedVendor, refetchVendorProducts]);
 
+  // Reset vendor changing state when products are loaded
+  useEffect(() => {
+    if (!isLoadingProducts && isVendorChanging) {
+      const timer = setTimeout(() => {
+        setIsVendorChanging(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingProducts, isVendorChanging]);
+
 console.log("selectedVendorId", selectedVendor?._id);
 console.log("vendorProducts", vendorProducts);
 
@@ -71,6 +82,7 @@ console.log("vendorProducts", vendorProducts);
 
   const handleVendorClick = (vendor: Vendor) => {   
     if (selectedVendor?._id !== vendor._id) {
+      setIsVendorChanging(true);
       setSelectedVendor(vendor);
     }
   };
@@ -116,7 +128,7 @@ console.log("vendorProducts", vendorProducts);
       router.push('/(auth)/login');
       return;
     }
-    setShowCheckoutModal(true);
+    router.push('/checkout');
   };
 
   const handleLocationRequest = async () => {
@@ -190,7 +202,7 @@ console.log("vendorProducts", vendorProducts);
         <ProductsSection
           selectedVendor={selectedVendor}
           products={vendorProducts}
-          isLoading={isLoadingProducts}
+          isLoading={isLoadingProducts || isVendorChanging}
           onProductPress={(product) => {
             setSelectedProduct(product);
             setShowProductDetail(true);
@@ -230,16 +242,12 @@ console.log("vendorProducts", vendorProducts);
         getTotalPrice={getTotalPrice}
       />
 
-      <CheckoutModal
-        visible={showCheckoutModal}
-        cart={cart}
-        onClose={() => setShowCheckoutModal(false)}
-        onPlaceOrder={() => {
+      <OrderSuccessAnimation
+        visible={showSuccessAnimation}
+        onAnimationComplete={() => {
+          setShowSuccessAnimation(false);
           dispatch(showSnackbar({ message: 'Order placed successfully!', type: 'success' }));
-          dispatch(clearCart());
-          setShowCheckoutModal(false);
         }}
-        getTotalPrice={getTotalPrice}
       />
     </SafeAreaView>
   );

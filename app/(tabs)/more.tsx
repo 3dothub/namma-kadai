@@ -4,14 +4,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../store/slices/authSlice';
 import { router } from 'expo-router';
+import { persistor } from '../../store';
 
 export default function MoreScreen() {
   const dispatch = useDispatch();
 
-  const handleLogout = () => {
-    dispatch(logout());
-    // Navigate to login screen
-    router.replace('/(auth)/login');
+  const handleLogout = async () => {
+    try {
+      // First dispatch logout to clear state
+      dispatch(logout());
+      
+      // Then purge persisted data to prevent data leakage
+      await persistor.purge();
+      
+      // Navigate to login screen
+      router.replace('/(auth)/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Still navigate to login even if purge fails
+      router.replace('/(auth)/login');
+    }
   };
 
   return (

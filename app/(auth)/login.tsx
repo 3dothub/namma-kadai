@@ -43,18 +43,31 @@ export default function LoginScreen() {
       const successMessage = response.message || "Login successful!";
       dispatch(showSnackbar({ message: successMessage, type: "success" }));
 
-      // Check if user has location data after login
-
+      // Enhanced location check after login
       setTimeout(() => {
         const hasLocationData = response.user.addresses?.some(
           (address) =>
             address.location && address.location.lat && address.location.lng
         );
 
+        console.log('Login redirect logic:', {
+          hasLocationData,
+          addressCount: response.user.addresses?.length || 0,
+          userCreatedAt: response.user.createdAt,
+        });
+
+        // Check if this is a relatively new account (created in last 24 hours)
+        const isNewAccount = response.user.createdAt && 
+          (new Date().getTime() - new Date(response.user.createdAt).getTime()) < (24 * 60 * 60 * 1000);
+
         if (hasLocationData) {
+          // User has valid location data, go to home
           router.replace("/(tabs)/home");
+        } else if (isNewAccount) {
+          // New account without location, prioritize location setup
+          router.replace("/welcome");
         } else {
-          // Redirect to welcome where user can explore (which will trigger location modal)
+          // Existing account without location, still go to welcome for location setup
           router.replace("/welcome");
         }
       }, 500);

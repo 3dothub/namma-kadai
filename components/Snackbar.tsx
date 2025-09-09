@@ -21,19 +21,40 @@ export const Snackbar: React.FC<SnackBarProps> = ({
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(-200)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const emojiScale = useRef(new Animated.Value(0.5)).current;
+  const emojiRotate = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      // Show animation - slide down from top
+      // Show animation - slide down from top with emoji animation
       Animated.parallel([
         Animated.timing(translateY, {
           toValue: 0,
-          duration: 400,
+          duration: 500,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 400,
+          duration: 500,
+          useNativeDriver: true,
+        }),
+        // Emoji bounce animation
+        Animated.sequence([
+          Animated.timing(emojiScale, {
+            toValue: 1.3,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(emojiScale, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]),
+        // Emoji rotation animation
+        Animated.timing(emojiRotate, {
+          toValue: 1,
+          duration: 800,
           useNativeDriver: true,
         }),
       ]).start();
@@ -66,8 +87,19 @@ export const Snackbar: React.FC<SnackBarProps> = ({
     });
   };
 
-  const backgroundColor = type === 'success' ? '#10b981' : '#ef4444';
-  const iconName: 'checkmark-circle' | 'alert-circle' = type === 'success' ? 'checkmark-circle' : 'alert-circle';
+  const backgroundColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6';
+  const iconName: 'checkmark-circle' | 'alert-circle' | 'information-circle' = 
+    type === 'success' ? 'checkmark-circle' : type === 'error' ? 'alert-circle' : 'information-circle';
+
+  // Extract emojis from message for animation
+  const emojiRegex = /[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu;
+  const emojis = message.match(emojiRegex) || [];
+  const messageWithoutEmojis = message.replace(emojiRegex, '').trim();
+
+  const rotateInterpolation = emojiRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   return (
     <Animated.View
@@ -84,15 +116,40 @@ export const Snackbar: React.FC<SnackBarProps> = ({
           styles.snackbar,
           {
             backgroundColor,
-            paddingTop: insets.top + 16,
-            paddingBottom: 16,
+            paddingTop: insets.top + 20,
+            paddingBottom: 20,
           }
         ]}
       >
         <View style={styles.content}>
+          {/* Animated Emojis */}
+          {emojis.length > 0 && (
+            <View style={styles.emojiContainer}>
+              {emojis.slice(0, 4).map((emoji, index) => (
+                <Animated.Text
+                  key={index}
+                  style={[
+                    styles.emoji,
+                    {
+                      transform: [
+                        { scale: emojiScale },
+                        { rotate: index % 2 === 0 ? rotateInterpolation : '0deg' },
+                      ],
+                    },
+                  ]}
+                >
+                  {emoji}
+                </Animated.Text>
+              ))}
+            </View>
+          )}
+          
+          {/* Icon */}
           <Ionicons name={iconName} size={24} color="#fff" style={styles.icon} />
+          
+          {/* Message */}
           <Text style={styles.message}>
-            {message}
+            {messageWithoutEmojis || message}
           </Text>
         </View>
       </View>
@@ -130,5 +187,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
     lineHeight: 22,
+  },
+  emojiContainer: {
+    flexDirection: 'row',
+    marginRight: 8,
+    alignItems: 'center',
+  },
+  emoji: {
+    fontSize: 20,
+    marginHorizontal: 2,
   },
 });

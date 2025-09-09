@@ -1,23 +1,115 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
 import { Ionicons } from '@expo/vector-icons';
-import { removeFromFavorites, toggleFavorite, addToCart } from '../../store/slices/productSlice';
+import { router } from 'expo-router';
+import { addProductToCart } from '../../store/slices/productSlice';
+import { useGetFavoritesQuery, useRemoveFromFavoritesMutation } from '../../store/api/favoritesApi';
+import { ProductCard } from '../../components/home/ProductCard';
+import { ProductDetailModal } from '../../components/home/ProductDetailModal';
+import { CartBottomSection } from '../../components/home/CartBottomSection';
+import { CartModal } from '../../components/home/CartModal';
+import { Product } from '../../store/api/vendorApi';
 
 export default function FavouriteScreen() {
   const dispatch = useDispatch();
-  const productState = useSelector((state: RootState) => state.products);
-  const favorites = productState?.favorites || [];
+  const cart = useSelector((state: RootState) => state.products.cart);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showProductDetail, setShowProductDetail] = useState(false);
+  const [showCartModal, setShowCartModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const handleRemoveFavorite = (productId: number) => {
-    dispatch(toggleFavorite(productId));
+  // Use the favorites API
+  const { data: favoritesData, error, isLoading, refetch } = useGetFavoritesQuery();
+  const [removeFromFavorites] = useRemoveFromFavoritesMutation();
+
+  const favorites = favoritesData?.favorites || [];
+
+  // Convert favorites API product to full Product type
+  const convertToFullProduct = (favProduct: any): Product => ({
+    _id: favProduct._id,
+    name: favProduct.name,
+    price: favProduct.price,
+    offerPrice: favProduct.offerPrice,
+    images: favProduct.images || (favProduct.image ? [favProduct.image] : []),
+    description: favProduct.description || '',
+    category: favProduct.category || '',
+    vendorId: favProduct.vendorId || '',
+    stock: 50, // Higher default stock to avoid "left" count
+    unit: 'pcs',
+    isActive: true,
+    createdAt: favProduct.createdAt || new Date().toISOString(),
+    updatedAt: favProduct.updatedAt || new Date().toISOString(),
+  });
+
+  const handleRemoveFavorite = async (productId: string) => {
+    try {
+      await removeFromFavorites(productId);
+    } catch (error) {
+      console.error('Error removing from favorites:', error);
+    }
   };
 
-  const handleAddToCart = (product: any) => {
-    dispatch(addToCart(product));
+  const handleProductPress = (product: Product) => {
+    setSelectedProduct(product);
+    setShowProductDetail(true);
   };
+
+  const handleAddToCart = (product: Product) => {
+    dispatch(addProductToCart({
+      product: product,
+      quantity: 1,
+    }));
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const getTotalPrice = () => {
+    return cart.reduce((total, item) => total + ((item.offerPrice || item.price) * item.quantity), 0);
+  };
+
+  const getTotalItems = () => {
+    return cart.reduce((total, item) => total + item.quantity, 0);
+  };
+
+  if (isLoading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Favourites</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyTitle}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Favourites</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="alert-circle-outline" size={80} color="#E5E7EB" />
+          <Text style={styles.emptyTitle}>Error Loading Favourites</Text>
+          <Text style={styles.emptySubtitle}>
+            Please try again later
+          </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!Array.isArray(favorites) || favorites.length === 0) {
     return (
@@ -25,13 +117,20 @@ export default function FavouriteScreen() {
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Favourites</Text>
         </View>
-        <View style={styles.emptyContainer}>
-          <Ionicons name="heart-outline" size={80} color="#E5E7EB" />
-          <Text style={styles.emptyTitle}>No Favourites Yet</Text>
-          <Text style={styles.emptySubtitle}>
-            Start adding products to your favourites to see them here
-          </Text>
-        </View>
+        <ScrollView
+          style={styles.scrollView}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        >
+          <View style={styles.emptyContainer}>
+            <Ionicons name="heart-outline" size={80} color="#E5E7EB" />
+            <Text style={styles.emptyTitle}>No Favourites Yet</Text>
+            <Text style={styles.emptySubtitle}>
+              Start adding products to your favourites to see them here
+            </Text>
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -45,56 +144,71 @@ export default function FavouriteScreen() {
         </Text>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
         <View style={styles.favoritesGrid}>
-          {favorites.map((product) => (
-            <View key={product.id} style={styles.favoriteCard}>
-              <TouchableOpacity
-                style={styles.favoriteButton}
-                onPress={() => handleRemoveFavorite(product.id)}
-              >
-                <Ionicons name="heart" size={20} color="#EF4444" />
-              </TouchableOpacity>
-              
-              <View style={styles.productImageContainer}>
-                <Image
-                  source={{ uri: product.image }}
-                  style={styles.productImage}
-                  defaultSource={require('../../assets/icon.png')}
-                />
-              </View>
-              
-              <View style={styles.productInfo}>
-                <Text style={styles.productName} numberOfLines={2}>
-                  {product.name}
-                </Text>
-                <Text style={styles.vendorName}>{product.vendorName}</Text>
-                
-                <View style={styles.priceContainer}>
-                  {product.offerPrice && (
-                    <Text style={styles.originalPrice}>₹{product.price}</Text>
-                  )}
-                  <Text style={styles.productPrice}>
-                    ₹{product.offerPrice || product.price}
-                  </Text>
-                </View>
-                
-                <Text style={styles.deliveryTime}>
-                  🕒 {product.deliveryTime}
-                </Text>
-                
-                <TouchableOpacity
-                  style={styles.addToCartButton}
-                  onPress={() => handleAddToCart(product)}
-                >
-                  <Ionicons name="add-circle" size={16} color="#fff" />
-                  <Text style={styles.addToCartText}>Add to Cart</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
+          {favorites.map((product) => {
+            const fullProduct = convertToFullProduct(product);
+            return (
+              <ProductCard
+                key={product._id}
+                product={fullProduct}
+                onPress={handleProductPress}
+                onToggleFavorite={handleRemoveFavorite}
+                onAddToCart={handleAddToCart}
+              />
+            );
+          })}
         </View>
+        
+        {/* Bottom spacing for cart section */}
+        <View style={{ height: cart.length > 0 ? 100 : 20 }} />
       </ScrollView>
+
+      {/* Cart Bottom Section */}
+      {cart.length > 0 && (
+        <CartBottomSection
+          totalItems={getTotalItems()}
+          totalPrice={getTotalPrice()}
+          onViewCart={() => setShowCartModal(true)}
+        />
+      )}
+
+      {/* Product Detail Modal */}
+      <ProductDetailModal
+        visible={showProductDetail}
+        product={selectedProduct}
+        onClose={() => {
+          setShowProductDetail(false);
+          setSelectedProduct(null);
+        }}
+        onToggleFavorite={handleRemoveFavorite}
+        onAddToCart={handleAddToCart}
+        isFavorite={true} // Always true since this is favorites tab
+      />
+
+      {/* Cart Modal */}
+      <CartModal
+        visible={showCartModal}
+        cart={cart}
+        onClose={() => setShowCartModal(false)}
+        onUpdateQuantity={(productId: string, quantity: number) => {
+          // Add cart update logic here if needed
+        }}
+        onRemoveItem={(productId: string) => {
+          // Add cart remove logic here if needed
+        }}
+        onCheckout={() => {
+          setShowCartModal(false);
+          router.push('/checkout');
+        }}
+        getTotalPrice={getTotalPrice}
+      />
     </SafeAreaView>
   );
 }
@@ -131,6 +245,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
+    paddingVertical: 60,
   },
   emptyTitle: {
     fontSize: 20,
@@ -145,96 +260,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  retryButton: {
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   favoritesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 16,
-  },
-  favoriteCard: {
-    width: '48%',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    position: 'relative',
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    zIndex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  productImageContainer: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-  },
-  productInfo: {
-    alignItems: 'center',
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  vendorName: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 4,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  originalPrice: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textDecorationLine: 'line-through',
-  },
-  productPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#22C55E',
-  },
-  deliveryTime: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  addToCartButton: {
-    backgroundColor: '#22C55E',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginTop: 8,
-    gap: 4,
-  },
-  addToCartText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
   },
 });

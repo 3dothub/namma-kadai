@@ -29,7 +29,6 @@ export const VendorsSection: React.FC<VendorsSectionProps> = ({
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Vendors</Text>
       {isLoading ? (
         <VendorListSkeleton />
       ) : filteredVendors.length > 0 ? (

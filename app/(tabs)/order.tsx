@@ -1,59 +1,43 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-
-// Mock Orders Data
-const mockOrders = [
-  {
-    id: 1,
-    vendor: 'Bags Minerals',
-    estimatedTime: '20 mins',
-    image: require('../../assets/icon.png'),
-    status: 'preparing',
-    items: ['20L Water Can x 1'],
-    total: 40,
-    orderTime: '2 hours ago',
-    deliveryAddress: '123 Main Street, Bangalore'
-  },
-  {
-    id: 2,
-    vendor: 'A1 Cake Shop',
-    estimatedTime: '35 mins',
-    image: require('../../assets/icon.png'),
-    status: 'confirmed',
-    items: ['Chocolate Cake x 1'],
-    total: 450,
-    orderTime: '1 hour ago',
-    deliveryAddress: '123 Main Street, Bangalore'
-  },
-  {
-    id: 3,
-    vendor: "Komala's Kitchen",
-    estimatedTime: 'Delivered',
-    image: require('../../assets/icon.png'),
-    status: 'delivered',
-    items: ['South Indian Thali x 2'],
-    total: 240,
-    orderTime: 'Yesterday',
-    deliveryAddress: '123 Main Street, Bangalore'
-  }
-];
+import { useGetMyOrdersQuery } from '../../store/api/orderApi';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { router } from 'expo-router';
 
 export default function OrderScreen() {
   const [selectedTab, setSelectedTab] = useState('active');
+  const { user } = useSelector((state: RootState) => state.auth);
+  
+  const { 
+    data: ordersResponse, 
+    isLoading, 
+    error, 
+    refetch 
+  } = useGetMyOrdersQuery();
 
-  const activeOrders = mockOrders.filter(order => order.status !== 'delivered');
-  const completedOrders = mockOrders.filter(order => order.status === 'delivered');
+  const orders = ordersResponse?.orders || [];
+  const activeOrders = orders.filter(order => 
+    ['pending', 'confirmed', 'dispatched'].includes(order.status)
+  );
+  const completedOrders = orders.filter(order => 
+    ['delivered', 'cancelled'].includes(order.status)
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'confirmed':
         return '#22C55E';
-      case 'preparing':
+      case 'pending':
         return '#F59E0B';
+      case 'dispatched':
+        return '#3B82F6';
       case 'delivered':
         return '#8B5CF6';
+      case 'cancelled':
+        return '#EF4444';
       default:
         return '#6B7280';
     }
@@ -63,14 +47,75 @@ export default function OrderScreen() {
     switch (status) {
       case 'confirmed':
         return 'checkmark-circle-outline';
-      case 'preparing':
-        return 'restaurant-outline';
+      case 'pending':
+        return 'time-outline';
+      case 'dispatched':
+        return 'car-outline';
       case 'delivered':
         return 'bag-check-outline';
+      case 'cancelled':
+        return 'close-circle-outline';
       default:
         return 'time-outline';
     }
   };
+
+  const formatOrderTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) {
+      return `${diffMins} mins ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    } else if (diffDays === 1) {
+      return 'Yesterday';
+    } else {
+      return `${diffDays} days ago`;
+    }
+  };
+
+  const getEstimatedTime = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return '15-30 mins';
+      case 'confirmed':
+        return '20-35 mins';
+      case 'dispatched':
+        return '10-15 mins';
+      case 'delivered':
+        return 'Delivered';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return 'Processing';
+    }
+  };
+
+  const handleProceedToCheckout = () => {
+    router.push('/checkout');
+  };
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>My Orders</Text>
+        </View>
+        <View style={styles.emptyState}>
+          <Ionicons name="person-outline" size={64} color="#D1D5DB" />
+          <Text style={styles.emptyStateTitle}>Please Login</Text>
+          <Text style={styles.emptyStateText}>
+            You need to login to view your orders
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -99,67 +144,92 @@ export default function OrderScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {(selectedTab === 'active' ? activeOrders : completedOrders).map((order) => (
-          <View key={order.id} style={styles.orderCard}>
-            <View style={styles.orderHeader}>
-              <View style={styles.orderHeaderLeft}>
-                <Image source={order.image} style={styles.orderImage} />
-                <View style={styles.orderBasicInfo}>
-                  <Text style={styles.orderVendor}>{order.vendor}</Text>
-                  <Text style={styles.orderTime}>{order.orderTime}</Text>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+        }
+      >
+        {isLoading && orders.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="hourglass-outline" size={64} color="#D1D5DB" />
+            <Text style={styles.emptyStateTitle}>Loading Orders...</Text>
+            <Text style={styles.emptyStateText}>Please wait while we fetch your orders</Text>
+          </View>
+        ) : (
+          (selectedTab === 'active' ? activeOrders : completedOrders).map((order) => (
+            <View key={order._id} style={styles.orderCard}>
+              <View style={styles.orderHeader}>
+                <View style={styles.orderHeaderLeft}>
+                  <Image 
+                    source={require('../../assets/icon.png')} 
+                    style={styles.orderImage} 
+                  />
+                  <View style={styles.orderBasicInfo}>
+                    <Text style={styles.orderVendor}>Order #{order._id.slice(-6)}</Text>
+                    <Text style={styles.orderTime}>{formatOrderTime(order.createdAt)}</Text>
+                  </View>
+                </View>
+                <View style={styles.orderStatus}>
+                  <Ionicons 
+                    name={getStatusIcon(order.status) as any} 
+                    size={16} 
+                    color={getStatusColor(order.status)} 
+                  />
+                  <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
+                    {order.status.toUpperCase()}
+                  </Text>
                 </View>
               </View>
-              <View style={styles.orderStatus}>
-                <Ionicons 
-                  name={getStatusIcon(order.status) as any} 
-                  size={16} 
-                  color={getStatusColor(order.status)} 
-                />
-                <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
-                  {order.status.toUpperCase()}
+
+              <View style={styles.orderDetails}>
+                <Text style={styles.orderItems}>
+                  {order.items.map(item => `${item.name} x ${item.quantity}`).join(', ')}
                 </Text>
+                {order.deliveryAddress && (
+                  <Text style={styles.orderAddress}>
+                    <Ionicons name="location-outline" size={12} color="#6B7280" />
+                    {' '}{order.deliveryAddress.street}, {order.deliveryAddress.city}
+                  </Text>
+                )}
+                {order.orderType === 'takeaway' && (
+                  <Text style={styles.orderAddress}>
+                    <Ionicons name="bag-outline" size={12} color="#6B7280" />
+                    {' '}Takeaway Order
+                  </Text>
+                )}
               </View>
-            </View>
 
-            <View style={styles.orderDetails}>
-              <Text style={styles.orderItems}>
-                {order.items.join(', ')}
-              </Text>
-              <Text style={styles.orderAddress}>
-                <Ionicons name="location-outline" size={12} color="#6B7280" />
-                {' '}{order.deliveryAddress}
-              </Text>
-            </View>
-
-            <View style={styles.orderFooter}>
-              <Text style={styles.orderTotal}>Total: ₹{order.total}</Text>
-              {order.status !== 'delivered' && (
-                <TouchableOpacity style={styles.trackButton}>
-                  <Ionicons name="navigate-outline" size={16} color="#fff" />
-                  <Text style={styles.trackButtonText}>Track Order</Text>
-                </TouchableOpacity>
-              )}
-              {order.status === 'delivered' && (
-                <TouchableOpacity style={styles.reorderButton}>
-                  <Ionicons name="refresh-outline" size={16} color="#22C55E" />
-                  <Text style={styles.reorderButtonText}>Reorder</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {order.status !== 'delivered' && (
-              <View style={styles.estimatedTime}>
-                <Ionicons name="time-outline" size={14} color="#22C55E" />
-                <Text style={styles.estimatedTimeText}>
-                  Estimated delivery: {order.estimatedTime}
-                </Text>
+              <View style={styles.orderFooter}>
+                <Text style={styles.orderTotal}>Total: ₹{order.totalAmount}</Text>
+                {!['delivered', 'cancelled'].includes(order.status) && (
+                  <TouchableOpacity style={styles.trackButton}>
+                    <Ionicons name="navigate-outline" size={16} color="#fff" />
+                    <Text style={styles.trackButtonText}>Track Order</Text>
+                  </TouchableOpacity>
+                )}
+                {order.status === 'delivered' && (
+                  <TouchableOpacity style={styles.reorderButton}>
+                    <Ionicons name="refresh-outline" size={16} color="#22C55E" />
+                    <Text style={styles.reorderButtonText}>Reorder</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            )}
-          </View>
-        ))}
 
-        {(selectedTab === 'active' ? activeOrders : completedOrders).length === 0 && (
+              {!['delivered', 'cancelled'].includes(order.status) && (
+                <View style={styles.estimatedTime}>
+                  <Ionicons name="time-outline" size={14} color="#22C55E" />
+                  <Text style={styles.estimatedTimeText}>
+                    Estimated delivery: {getEstimatedTime(order.status)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          ))
+        )}
+
+        {(selectedTab === 'active' ? activeOrders : completedOrders).length === 0 && !isLoading && (
           <View style={styles.emptyState}>
             <Ionicons 
               name={selectedTab === 'active' ? 'receipt-outline' : 'checkmark-done-outline'} 
@@ -175,6 +245,14 @@ export default function OrderScreen() {
                 : 'Your completed orders will appear here'
               }
             </Text>
+            {selectedTab === 'active' && (
+              <TouchableOpacity 
+                style={styles.shopNowButton}
+                onPress={() => router.push('/(tabs)/home')}
+              >
+                <Text style={styles.shopNowButtonText}>Shop Now</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -376,5 +454,17 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  shopNowButton: {
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  shopNowButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

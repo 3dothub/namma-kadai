@@ -5,10 +5,11 @@ import { useRouter, useSegments } from 'expo-router';
 import { RootState } from '../store';
 import { Snackbar } from './Snackbar';
 import { LocationModal } from './LocationModal';
-import { setLocationAccess, updateUserData } from '../store/slices/authSlice';
+import { setLocationAccess, updateUserData, logout } from '../store/slices/authSlice';
 import { setUserLocation } from '../store/slices/productSlice';
 import { showSnackbar, hideSnackbar } from '../store/slices/snackbarSlice';
 import { useUpdateLocationMutation } from '../store/api/userApi';
+// import { useVerifyTokenQuery } from '../store/api/authApi'; // Temporarily disabled
 import { getCurrentLocation, requestLocationPermission } from '../services/locationService';
 import { hasUserLocationData, getUserCurrentLocation, hasAnyLocationAccess } from '../utils/locationUtils';
 
@@ -22,12 +23,39 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
   const segments = useSegments();
   
   const { visible, message, type } = useSelector((state: RootState) => state.snackbar);
-  const { user, isAuthenticated, hasLocationAccess } = useSelector((state: RootState) => state.auth);
+  const { user, isAuthenticated, hasLocationAccess, token } = useSelector((state: RootState) => state.auth);
   const { userLocation } = useSelector((state: RootState) => state.products);
   
   const [updateLocation, { isLoading: isUpdatingLocation }] = useUpdateLocationMutation();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [locationRequired, setLocationRequired] = useState(false);
+
+  // Temporarily disable token verification as it might be causing issues
+  // const { data: tokenVerification, error: tokenError, isLoading: isVerifyingToken } = useVerifyTokenQuery(
+  //   undefined, 
+  //   { 
+  //     skip: !isAuthenticated || !token,
+  //     refetchOnMountOrArgChange: false,
+  //     refetchOnFocus: false,
+  //     refetchOnReconnect: false,
+  //   }
+  // );
+
+  // // Handle token verification results - only if there's an actual error response
+  // useEffect(() => {
+  //   if (tokenError && isAuthenticated && !isVerifyingToken) {
+  //     const errorStatus = (tokenError as any)?.status;
+  //     // Only logout on specific auth errors (401, 403)
+  //     if (errorStatus === 401 || errorStatus === 403) {
+  //       console.log('Token verification failed with auth error, logging out user');
+  //       dispatch(logout());
+  //       dispatch(showSnackbar({ 
+  //         message: 'Your session has expired. Please login again.', 
+  //         type: 'error' 
+  //       }));
+  //     }
+  //   }
+  // }, [tokenError, isAuthenticated, isVerifyingToken, dispatch]);
 
   // Check if user has any form of location data (user addresses, store location, or access granted)
   const hasLocationData = () => {
@@ -42,6 +70,18 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
     );
   };
 
+  // Check if user is new and needs location setup
+  const isNewUserNeedingLocation = () => {
+    if (!user) return false;
+    
+    const isNewAccount = user.createdAt && 
+      (new Date().getTime() - new Date(user.createdAt).getTime()) < (7 * 24 * 60 * 60 * 1000); // 7 days
+    
+    const hasNoLocationData = !user.addresses?.length && !hasLocationAccess && !userLocation;
+    
+    return isNewAccount && hasNoLocationData;
+  };
+
   // Navigation guard - redirect if location is required but not available
   useEffect(() => {
     // Show location modal for location-required routes regardless of authentication status
@@ -52,6 +92,18 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
       setLocationRequired(false);
     }
   }, [isAuthenticated, segments, user, hasLocationAccess, userLocation]);
+
+  // Proactive location modal for new users
+  useEffect(() => {
+    if (isNewUserNeedingLocation() && isAuthenticated) {
+      const timer = setTimeout(() => {
+        setShowLocationModal(true);
+        setLocationRequired(false); // Not strictly required, but encouraged
+      }, 2000); // Show after 2 seconds for new users
+
+      return () => clearTimeout(timer);
+    }
+  }, [user, isAuthenticated, hasLocationAccess, userLocation]);
 
   // Load user location into product store when available
   useEffect(() => {

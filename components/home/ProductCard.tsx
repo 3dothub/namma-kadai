@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Product, getProductMainImage, isProductAvailable, formatProductUnit } from '../../store/api/vendorApi';
+import { Product, getProductMainImage, isProductAvailable } from '../../store/api/vendorApi';
 
 interface ProductCardProps {
   product: Product;
@@ -17,12 +17,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onAddToCart,
 }) => {
   return (
-    <View style={styles.productCard}>
-      <TouchableOpacity onPress={() => onPress(product)}>
-        <View style={styles.productIconContainer}>
+    <TouchableOpacity style={styles.productCard} onPress={() => onPress(product)}>
+      <View style={styles.cardContent}>
+        {/* Product Image */}
+        <View style={styles.imageContainer}>
           <Image
             source={{ uri: getProductMainImage(product) }}
-            style={styles.productIcon}
+            style={styles.productImage}
             resizeMode="cover"
             defaultSource={require('../../assets/icon.png')}
           />
@@ -34,133 +35,70 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </View>
           )}
           {product.stock > 0 && product.stock <= 10 && (
-            <View style={styles.lowStockIndicator}>
-              <Text style={styles.lowStockText}>Only {product.stock} left</Text>
+            <View style={styles.lowStockBadge}>
+              <Text style={styles.lowStockText}>{product.stock} left</Text>
             </View>
           )}
         </View>
+
+        {/* Product Info */}
         <View style={styles.productInfo}>
-          <Text style={styles.productName}>{product.name}</Text>
-          <Text style={styles.productUnit}>{formatProductUnit(product)}</Text>
-          <View style={styles.priceContainer}>
-            {product.offerPrice && (
-              <Text style={styles.originalPrice}>₹{product.price}</Text>
-            )}
-            <Text style={styles.productPrice}>₹{product.offerPrice || product.price}</Text>
+          <Text style={styles.productName} numberOfLines={2}>{product.name}</Text>
+          
+          <View style={styles.priceRow}>
+            <View style={styles.priceContainer}>
+              {product.offerPrice && (
+                <Text style={styles.originalPrice}>₹{product.price}</Text>
+              )}
+              <Text style={styles.productPrice}>₹{product.offerPrice || product.price}</Text>
+            </View>
+            
+            {/* Add to Cart Button */}
+            <TouchableOpacity
+              style={[styles.addButton, !isProductAvailable(product) && styles.addButtonDisabled]}
+              onPress={() => isProductAvailable(product) && onAddToCart(product)}
+              disabled={!isProductAvailable(product)}
+            >
+              <Ionicons name="add" size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
-          <Text style={styles.deliveryTimeProduct}>30-45 mins</Text>
         </View>
-      </TouchableOpacity>
-      
-      <TouchableOpacity
-        style={styles.favoriteButton}
-        onPress={() => onToggleFavorite(product._id)}
-      >
-        <Ionicons 
-          name="heart-outline"
-          size={16} 
-          color="#6B7280"
-        />
-      </TouchableOpacity>
-      
-      <TouchableOpacity
-        style={[styles.addToCartButton, !isProductAvailable(product) && styles.addToCartButtonDisabled]}
-        onPress={() => isProductAvailable(product) && onAddToCart(product)}
-        disabled={!isProductAvailable(product)}
-      >
-        <Ionicons name="add" size={16} color="#fff" />
-      </TouchableOpacity>
-    </View>
+      </View>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   productCard: {
     width: '48%',
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    position: 'relative',
-  },
-  productIconContainer: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  productIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
-  },
-  productInfo: {
-    marginBottom: 8,
-  },
-  productName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 4,
-    textAlign: 'center',
-  },
-  productUnit: {
-    fontSize: 11,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  originalPrice: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textDecorationLine: 'line-through',
-  },
-  productPrice: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#22C55E',
-  },
-  deliveryTimeProduct: {
-    fontSize: 12,
-    color: '#22C55E',
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 6,
+    overflow: 'hidden',
   },
-  addToCartButton: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: '#22C55E',
-    borderRadius: 20,
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
+  cardContent: {
+    flex: 1,
   },
-  addToCartButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+  imageContainer: {
+    position: 'relative',
+    aspectRatio: 1,
+    backgroundColor: '#F8F9FA',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   unavailableOverlay: {
     position: 'absolute',
@@ -171,25 +109,80 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   unavailableText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },
-  lowStockIndicator: {
+  lowStockBadge: {
     position: 'absolute',
-    bottom: 4,
-    left: 4,
-    backgroundColor: '#F59E0B',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
+    top: 12,
+    left: 12,
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   lowStockText: {
-    color: '#fff',
-    fontSize: 8,
+    color: '#FFFFFF',
+    fontSize: 10,
     fontWeight: '600',
+  },
+  productInfo: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 10,
+    lineHeight: 18,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceContainer: {
+    flex: 1,
+  },
+  originalPrice: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+    marginBottom: 2,
+  },
+  productPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#10B981',
+  },
+  addButton: {
+    backgroundColor: '#10B981',
+    borderRadius: 20,
+    marginBottom: 8,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,
+    shadowColor: '#10B981',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 6,
+  },
+  addButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+    shadowColor: '#D1D5DB',
   },
 });
