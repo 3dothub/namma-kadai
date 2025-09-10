@@ -13,7 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
 import { useDispatch } from 'react-redux';
-import { addProduct, Product } from '../store/slices/productSlice';
+import { addProductToCart } from '../src/store/slices/productSlice';
+import { Product } from '../src/store/api/vendorApi';
 
 interface AddProductModalProps {
   visible: boolean;
@@ -74,18 +75,25 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
 
     // Create product object
     const newProduct: Product = {
-      id: Date.now(), // Simple ID generation
+      _id: Date.now().toString(), // Simple ID generation
+      vendorId: '', // Empty for manually added products
       name: productData.name.trim(),
+      description: productData.description.trim() || `Fresh ${productData.name.toLowerCase()}`,
       price: Number(productData.basePrice),
       offerPrice: productData.offerPrice ? Number(productData.offerPrice) : undefined,
-      image: 'assets/icon.png',
-      description: productData.description.trim() || `Fresh ${productData.name.toLowerCase()}`,
+      stock: 100, // Default stock
+      unit: 'piece', // Default unit
+      images: ['assets/icon.png'],
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       deliveryTime: productData.deliveryTime.trim() || '30 mins',
-      vendorName: productData.vendorName.trim(),
+      category: 'Other',
+      isAvailable: true,
     };
 
-    // Dispatch to Redux store
-    dispatch(addProduct(newProduct));
+    // Dispatch to Redux store (add to cart with quantity 1)
+    dispatch(addProductToCart({ product: newProduct, quantity: 1 }));
 
     // Reset form
     setProductData({

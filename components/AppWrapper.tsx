@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useRouter, useSegments } from 'expo-router';
-import { RootState } from '../store';
+import { RootState } from '../src/store';
 import { Snackbar } from './Snackbar';
 import { LocationModal } from './LocationModal';
-import { setLocationAccess, updateUserData, logout } from '../store/slices/authSlice';
-import { setUserLocation } from '../store/slices/productSlice';
-import { showSnackbar, hideSnackbar } from '../store/slices/snackbarSlice';
-import { useUpdateLocationMutation } from '../store/api/userApi';
-// import { useVerifyTokenQuery } from '../store/api/authApi'; // Temporarily disabled
-import { getCurrentLocation, requestLocationPermission } from '../services/locationService';
-import { hasUserLocationData, getUserCurrentLocation, hasAnyLocationAccess } from '../utils/locationUtils';
+import { setLocationAccess, updateUserData, logout } from '../src/store/slices/authSlice';
+import { setUserLocation } from '../src/store/slices/productSlice';
+import { showSnackbar, hideSnackbar } from '../src/store/slices/snackbarSlice';
+import { useUpdateLocationMutation } from '../src/store/api/userApi';
+// import { useVerifyTokenQuery } from '../src/store/api/authApi'; // Temporarily disabled
+import { getCurrentLocation, requestLocationPermission } from '../src/services/locationService';
+import { hasUserLocationData, getUserCurrentLocation, hasAnyLocationAccess } from '../src/utils/locationUtils';
 
 interface AppWrapperProps {
   children: React.ReactNode;

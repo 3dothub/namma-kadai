@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store';
+import { RootState } from '../../src/store';
 
 import { useRouter } from 'expo-router';
-import { Vendor, Product } from '../../store/api/vendorApi';
+import { Vendor, Product } from '../../src/store/api/vendorApi';
 import { 
   addProductToCart, 
   removeProductFromCart, 
@@ -13,11 +13,11 @@ import {
   clearCart,
   toggleFavorite,
   setUserLocation
-} from '../../store/slices/productSlice';
-import { showSnackbar } from '../../store/slices/snackbarSlice';
-import { useLocationBasedVendors } from '../../hooks/useLocationBasedVendors';
-import { useVendorProducts } from '../../hooks/useVendorProducts';
-import { getCurrentLocation, requestLocationPermission } from '../../services/locationService';
+} from '../../src/store/slices/productSlice';
+import { showSnackbar } from '../../src/store/slices/snackbarSlice';
+import { useLocationBasedVendors } from '../../src/hooks/useLocationBasedVendors';
+import { useVendorProducts } from '../../src/hooks/useVendorProducts';
+import { getCurrentLocation, requestLocationPermission } from '../../src/services/locationService';
 
 // Import the new components
 import {

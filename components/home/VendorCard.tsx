@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Vendor, isVendorOpen, getVendorImage } from '../../store/api/vendorApi';
+import { Vendor, isVendorOpen, getVendorImage } from '../../src/store/api/vendorApi';
 
 interface VendorCardProps {
   vendor: Vendor;

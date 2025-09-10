@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { currentTheme } from '../constants/Colors';
+import { currentTheme } from '../src/constants/Colors';
 
 interface LocationModalProps {
   visible: boolean;

@@ -2,6 +2,8 @@
   "expo": {
     "name": "Namma Kadai",
     "displayName": "Namma Kadai",
+    "userInterfaceStyle": "automatic",
+    "scheme": "namma-kadai",
     "extra": {
       "eas": {
         "projectId": "667e569c-9bba-4fc2-b6f4-5b412ae53c03"
@@ -18,7 +20,8 @@
       }
     },
     "plugins": [
-      "expo-build-properties"
+      "expo-build-properties",
+      "expo-router"
     ]
   }
 }

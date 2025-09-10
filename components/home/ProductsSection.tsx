@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ProductCard } from './ProductCard';
 import { ProductGridSkeleton } from '../Skeleton';
-import { Vendor, Product } from '../../store/api/vendorApi';
+import { Vendor, Product } from '../../src/store/api/vendorApi';
 
 interface ProductsSectionProps {
   selectedVendor: Vendor | null;

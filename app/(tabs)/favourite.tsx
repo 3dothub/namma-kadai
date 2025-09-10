@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store';
+import { RootState } from '../../src/store';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { addProductToCart } from '../../store/slices/productSlice';
-import { useGetFavoritesQuery, useRemoveFromFavoritesMutation } from '../../store/api/favoritesApi';
+import { addProductToCart } from '../../src/store/slices/productSlice';
+import { useGetFavoritesQuery, useRemoveFromFavoritesMutation } from '../../src/store/api/favoritesApi';
 import { ProductCard } from '../../components/home/ProductCard';
 import { ProductDetailModal } from '../../components/home/ProductDetailModal';
 import { CartBottomSection } from '../../components/home/CartBottomSection';
 import { CartModal } from '../../components/home/CartModal';
-import { Product } from '../../store/api/vendorApi';
+import { Product } from '../../src/store/api/vendorApi';
 
 export default function FavouriteScreen() {
   const dispatch = useDispatch();

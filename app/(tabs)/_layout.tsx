@@ -1,29 +1,12 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import React from 'react';
 
-// Create a simple event system for add product modal
-let addProductListeners: (() => void)[] = [];
-
-export const subscribeToAddProduct = (listener: () => void) => {
-  addProductListeners.push(listener);
-  return () => {
-    addProductListeners = addProductListeners.filter(l => l !== listener);
-  };
-};
-
-export const triggerAddProduct = () => {
-  addProductListeners.forEach(listener => listener());
-};
 
 export default function TabsLayout() {
   const router = useRouter();
-
-  const handleAddPress = () => {
-    triggerAddProduct();
-  };
 
   return (
     <Tabs

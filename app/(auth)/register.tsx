@@ -12,13 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Link, router } from 'expo-router';
-import { useRegisterMutation } from '../../store/api/authApi';
+import { useRegisterMutation } from '../../src/store/api/authApi';
 import { useDispatch } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { showSnackbar } from '../../store/slices/snackbarSlice';
+import { loginStart, loginSuccess, loginFailure } from '../../src/store/slices/authSlice';
+import { showSnackbar } from '../../src/store/slices/snackbarSlice';
 import { Ionicons } from '@expo/vector-icons';
-import { currentTheme } from '../../constants/Colors';
-import { sharedStyles } from '../../constants/SharedStyles';
+import { currentTheme } from '../../src/constants/Colors';
+import { sharedStyles } from '../../src/constants/SharedStyles';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { VendorCard } from './VendorCard';
 import { VendorListSkeleton } from '../Skeleton';
-import { Vendor } from '../../store/api/vendorApi';
+import { Vendor } from '../../src/store/api/vendorApi';
 
 interface VendorsSectionProps {
   vendors: Vendor[];
@@ -21,7 +21,7 @@ export const VendorsSection: React.FC<VendorsSectionProps> = ({
 }) => {
   const filteredVendors = vendors.filter((vendor: Vendor) => 
     vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vendor.shopDetails.categories.some(category => 
+    vendor.shopDetails.categories.some((category: string) => 
       category.toLowerCase().includes(searchQuery.toLowerCase())
     ) ||
     vendor.shopDetails.description.toLowerCase().includes(searchQuery.toLowerCase())

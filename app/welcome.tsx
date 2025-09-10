@@ -11,9 +11,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useSelector } from "react-redux";
-import { RootState } from "../store";
+import { RootState } from "../src/store";
 import { Ionicons } from "@expo/vector-icons";
-import { currentTheme } from "../constants/Colors";
+import { currentTheme } from "../src/constants/Colors";
 
 const { height } = Dimensions.get("window");
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Product, getProductMainImage, isProductAvailable } from '../../store/api/vendorApi';
+import { Product, getProductMainImage, isProductAvailable } from '../../src/store/api/vendorApi';
 
 interface ProductCardProps {
   product: Product;
