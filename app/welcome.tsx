@@ -11,9 +11,9 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useSelector } from "react-redux";
-import { RootState } from "../src/store";
+import { RootState } from "@/store";
 import { Ionicons } from "@expo/vector-icons";
-import { currentTheme } from "../src/constants/Colors";
+import { currentTheme } from "@/constants/Colors";
 
 const { height } = Dimensions.get("window");
 
@@ -30,7 +30,7 @@ export default function WelcomeScreen() {
       />
 
       <Image
-        source={require("../assets/auth-bg.png")}
+        source={require("@/assets/auth-bg.png")}
         style={styles.backgroundImage}
         resizeMode="cover"
       />

@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { currentTheme } from '../src/constants/Colors';
+import { currentTheme } from '../constants/Colors';
 
 interface LocationModalProps {
   visible: boolean;
@@ -59,7 +59,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
                 />
               </View>
               <Text style={styles.title}>
-                {required ? 'Location Required' : 'Enable Location'}
+                {required ? 'Location Required' : 'Enable Locationssss'}
               </Text>
               <Text style={styles.subtitle}>
                 {required 

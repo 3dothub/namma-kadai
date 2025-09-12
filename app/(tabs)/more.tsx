@@ -2,9 +2,9 @@ import React, { useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
-import { logout } from '../../src/store/slices/authSlice';
+import { logout } from '@/store/slices/authSlice';
 import { router } from 'expo-router';
-import { persistor } from '../../src/store';
+import { persistor } from '@/store';
 
 export default function MoreScreen() {
   const dispatch = useDispatch();

@@ -4,7 +4,7 @@
     "slug": "namma-kadai",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "@/assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "privacy": "public",
@@ -12,13 +12,13 @@
     "keywords": ["grocery", "delivery", "local", "essentials", "food", "shopping", "kadai"],
     "primaryColor": "#22C55E",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "@/assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#22C55E"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.threedotart.nammakadai",
+      "bundleIdentifier": "com.3dothub.nammakadai",
       "buildNumber": "1.0.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -28,10 +28,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "@/assets/adaptive-icon.png",
         "backgroundColor": "#22C55E"
       },
-      "package": "com.threedotart.namma_kadai",
+      "package": "com.3dothub.namma_kadai",
       "versionCode": 2,
       "compileSdkVersion": 34,
       "targetSdkVersion": 34,
@@ -41,7 +41,7 @@
         "INTERNET",
         "ACCESS_NETWORK_STATE"
       ],
-      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.threedotart.namma_kadai",
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.3dothub.namma_kadai",
       "googleServicesFile": "./google-services.json"
     },
     "plugins": [
@@ -69,7 +69,7 @@
       ]
     ],
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "@/assets/favicon.png"
     },
     "scheme": "namma-kadai",
     "experiments": {

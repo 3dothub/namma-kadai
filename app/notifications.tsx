@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSelector } from 'react-redux';
-import { RootState } from '../src/store';
+import { RootState } from '@/store';
 import {
   useGetNotificationsQuery,
   useMarkNotificationAsReadMutation,
@@ -21,7 +21,7 @@ import {
   useDeleteNotificationMutation,
   useDeleteAllNotificationsMutation,
   Notification as NotificationData,
-} from '../src/store/api/notificationApi';
+} from '@/store/api/notificationApi';
 
 const getIconForType = (type: string) => {
   switch (type) {

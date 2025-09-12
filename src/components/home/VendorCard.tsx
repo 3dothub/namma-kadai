@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Vendor, isVendorOpen, getVendorImage } from '../../src/store/api/vendorApi';
+import { Vendor, isVendorOpen, getVendorImage } from '@/store/api/vendorApi';
 
 interface VendorCardProps {
   vendor: Vendor;
@@ -24,7 +24,7 @@ export const VendorCard: React.FC<VendorCardProps> = ({
           source={{ uri: getVendorImage(vendor) }}
           style={styles.vendorIcon}
           resizeMode="cover"
-          defaultSource={require('../../assets/icon.png')}
+          defaultSource={require('@/assets/icon.png')}
         />
         {isVendorOpen(vendor) && (
           <View style={styles.openIndicator}>

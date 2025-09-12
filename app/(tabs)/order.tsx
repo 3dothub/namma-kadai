@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Image, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useGetMyOrdersQuery } from '../../src/store/api/orderApi';
+import { useGetMyOrdersQuery } from '@/store/api/orderApi';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../src/store';
+import { RootState } from '@/store';
 import { router } from 'expo-router';
 
 export default function OrderScreen() {
@@ -163,7 +163,7 @@ export default function OrderScreen() {
               <View style={styles.orderHeader}>
                 <View style={styles.orderHeaderLeft}>
                   <Image 
-                    source={require('../../assets/icon.png')} 
+                    source={require('@/assets/icon.png')} 
                     style={styles.orderImage} 
                   />
                   <View style={styles.orderBasicInfo}>

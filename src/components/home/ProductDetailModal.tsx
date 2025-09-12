@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
-import { Product, getProductMainImage } from '../../src/store/api/vendorApi';
-import { useAddToFavoritesMutation, useRemoveFromFavoritesMutation } from '../../src/store/api/favoritesApi';
+import { Product, getProductMainImage } from '@/store/api/vendorApi';
+import { useAddToFavoritesMutation, useRemoveFromFavoritesMutation } from '@/store/api/favoritesApi';
 
 interface ProductDetailModalProps {
   visible: boolean;

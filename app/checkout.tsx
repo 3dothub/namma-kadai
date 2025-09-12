@@ -13,14 +13,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../src/store';
-import { useCreateOrderMutation } from '../src/store/api/orderApi';
-import { clearCart } from '../src/store/slices/productSlice';
-import { showSnackbar } from '../src/store/slices/snackbarSlice';
-import { useGetVendorProductsQuery, getProductVendorId } from '../src/store/api/vendorApi';
-import { useUpdateLocationMutation } from '../src/store/api/userApi';
-import { setLocationAccess, addUserAddress } from '../src/store/slices/authSlice';
-import { getCurrentLocation, requestLocationPermission } from '../src/services/locationService';
+import { RootState } from '@/store';
+import { useCreateOrderMutation } from '@/store/api/orderApi';
+import { clearCart } from '@/store/slices/productSlice';
+import { showSnackbar } from '@/store/slices/snackbarSlice';
+import { useGetVendorProductsQuery, getProductVendorId } from '@/store/api/vendorApi';
+import { useUpdateLocationMutation } from '@/store/api/userApi';
+import { setLocationAccess, addUserAddress } from '@/store/slices/authSlice';
+import { getCurrentLocation, requestLocationPermission } from '@/services/locationService';
 
 export default function CheckoutScreen() {
   const dispatch = useDispatch();

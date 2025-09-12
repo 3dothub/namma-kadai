@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Animatable from 'react-native-animatable';
-import { CartItem } from '../../src/store/slices/productSlice';
+import { CartItem } from '@/store/slices/productSlice';
 
 interface CheckoutModalProps {
   visible: boolean;

@@ -93,12 +93,12 @@ export const isVendorOpen = (vendor: Vendor) => {
 };
 
 export const getVendorImage = (vendor: Vendor) => {
-  return vendor.shopDetails.logoUrl || 'assets/icon.png';
+  return vendor.shopDetails.logoUrl || '@/assets/icon.png';
 };
 
 // Product helper functions
 export const getProductMainImage = (product: Product) => {
-  return product.images && product.images.length > 0 ? product.images[0] : 'assets/icon.png';
+  return product.images && product.images.length > 0 ? product.images[0] : '@/assets/icon.png';
 };
 
 export const isProductAvailable = (product: Product) => {

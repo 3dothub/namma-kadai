@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { VendorCard } from './VendorCard';
-import { VendorListSkeleton } from '../Skeleton';
-import { Vendor } from '../../src/store/api/vendorApi';
+import { VendorListSkeleton } from '@/components/Skeleton';
+import { Vendor } from '@/store/api/vendorApi';
 
 interface VendorsSectionProps {
   vendors: Vendor[];

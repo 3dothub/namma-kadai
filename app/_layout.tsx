@@ -1,8 +1,8 @@
 import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AppWrapper } from "../components/AppWrapper";
-import { ReduxProvider } from "../src/providers";
+import { AppWrapper } from "@/components/AppWrapper";
+import { ReduxProvider } from "@/providers";
 
 function AppContent() {
   return (

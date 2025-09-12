@@ -12,12 +12,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, router } from "expo-router";
-import { useLoginMutation } from "../../src/store/api/authApi";
+import { useLoginMutation } from "@/store/api/authApi";
 import { useDispatch } from "react-redux";
-import { showSnackbar } from "../../src/store/slices/snackbarSlice";
+import { showSnackbar } from "@/store/slices/snackbarSlice";
 import { Ionicons } from "@expo/vector-icons";
-import { currentTheme } from "../../src/constants/Colors";
-import { sharedStyles } from "../../src/constants/SharedStyles";
+import { currentTheme } from "@/constants/Colors";
+import { sharedStyles } from "@/constants/SharedStyles";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");

@@ -1,7 +1,7 @@
 import { Redirect } from 'expo-router';
 import { useSelector } from 'react-redux';
-import { RootState } from '../src/store';
-import { hasAnyLocationAccess } from '../src/utils/locationUtils';
+import { RootState } from '@/store';
+import { hasAnyLocationAccess } from '@/utils/locationUtils';
 
 export default function Index() {
   const { isAuthenticated, user, hasLocationAccess } = useSelector((state: RootState) => state.auth);
