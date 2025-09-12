@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -10,17 +10,72 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store";
 import { Ionicons } from "@expo/vector-icons";
 import { currentTheme } from "@/constants/Colors";
+import { LocationModal } from "@/components/LocationModal";
+import { getCurrentLocationWithAddress } from "@/services/locationService";
+import { setCurrentLocation, setWelcomeCompleted } from "@/store/slices/authSlice";
+import { showSnackbar } from "@/store/slices/snackbarSlice";
 
 const { height } = Dimensions.get("window");
 
 export default function WelcomeScreen() {
-  const { isAuthenticated } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const dispatch = useDispatch();
+  const { currentLocation, hasCompletedWelcome } = useSelector((state: RootState) => state.auth);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [isLocationLoading, setIsLocationLoading] = useState(false);
+
+  const handleExploreClick = () => {
+    // Mark welcome as completed
+    dispatch(setWelcomeCompleted(true));
+    
+    // Check if location is available
+    if (!currentLocation) {
+      setShowLocationModal(true);
+    } else {
+      // Navigate to home if location is already available
+      router.push("/(tabs)/home");
+    }
+  };
+
+  const handleLocationRequest = async () => {
+    setIsLocationLoading(true);
+    try {
+      const location = await getCurrentLocationWithAddress({
+        timeout: 15000,
+        enableHighAccuracy: true,
+        showSnackbar: (message, type) => dispatch(showSnackbar({ message, type }))
+      });
+
+      if (location) {
+        dispatch(setCurrentLocation(location));
+        setShowLocationModal(false);
+        // Navigate to home after getting location
+        router.push("/(tabs)/home");
+      } else {
+        dispatch(showSnackbar({ 
+          message: 'Unable to get location. Please try again or enable location services.', 
+          type: 'error' 
+        }));
+      }
+    } catch (error) {
+      console.error('Location error:', error);
+      dispatch(showSnackbar({ 
+        message: 'Failed to get location. Please try again.', 
+        type: 'error' 
+      }));
+    } finally {
+      setIsLocationLoading(false);
+    }
+  };
+
+  const handleLocationSkip = () => {
+    setShowLocationModal(false);
+    // Navigate to home even without location (app can handle this)
+    router.push("/(tabs)/home");
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,27 +93,15 @@ export default function WelcomeScreen() {
       <View style={styles.content}>
         <Text style={styles.title}>Welcome</Text>
         <Text style={styles.subtitle}>
-          {isAuthenticated
-            ? "Discover amazing products and services in your area"
-            : "Discover local stores and products near you.\nSign in for a personalized experience."}
+          {"Discover local stores and products near you.\nSign in for a personalized experience."}
         </Text>
 
         <View style={styles.actions}>
-          {!isAuthenticated && (
-            <Pressable
-              style={styles.signInButton}
-              onPress={() => router.push("/(auth)/login")}
-            >
-              <Text style={styles.signInText}>Sign In</Text>
-            </Pressable>
-          )}
-
           <Pressable
             style={styles.exploreButton}
-            onPress={() => router.push("/(tabs)/home")}
+            onPress={handleExploreClick}
           >
-            <Text style={styles.exploreText}>Explore Dashboard
-            </Text>
+            <Text style={styles.exploreText}>Explore Dashboard</Text>
             <Ionicons
               name="arrow-forward"
               size={20}
@@ -67,6 +110,15 @@ export default function WelcomeScreen() {
           </Pressable>
         </View>
       </View>
+
+      {/* Location Modal */}
+      <LocationModal
+        visible={showLocationModal}
+        onRequestLocation={handleLocationRequest}
+        onSkip={handleLocationSkip}
+        loading={isLocationLoading}
+        required={false}
+      />
     </SafeAreaView>
   );
 }

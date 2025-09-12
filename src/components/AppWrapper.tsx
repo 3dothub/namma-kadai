@@ -5,13 +5,12 @@ import { useRouter, useSegments } from 'expo-router';
 import { RootState } from '../store';
 import { Snackbar } from './Snackbar';
 import { LocationModal } from './LocationModal';
-import { setLocationAccess, updateUserData, logout } from '../store/slices/authSlice';
+import { setLocationAccess, updateUserData, setCurrentLocation } from '../store/slices/authSlice';
 import { setUserLocation } from '../store/slices/productSlice';
 import { showSnackbar, hideSnackbar } from '../store/slices/snackbarSlice';
 import { useUpdateLocationMutation } from '../store/api/userApi';
-// import { useVerifyTokenQuery } from '@/store/api/authApi'; // Temporarily disabled
-import { getCurrentLocation, requestLocationPermission } from '../services/locationService';
-import { hasUserLocationData, getUserCurrentLocation, hasAnyLocationAccess } from '../utils/locationUtils';
+import { getCurrentLocationWithAddress, requestLocationPermission } from '../services/locationService';
+import { getUserCurrentLocation, hasAnyLocationAccess } from '../utils/locationUtils';
 
 interface AppWrapperProps {
   children: React.ReactNode;
@@ -19,50 +18,21 @@ interface AppWrapperProps {
 
 export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
   const dispatch = useDispatch();
-  const router = useRouter();
   const segments = useSegments();
   
   const { visible, message, type } = useSelector((state: RootState) => state.snackbar);
-  const { user, isAuthenticated, hasLocationAccess, token } = useSelector((state: RootState) => state.auth);
+  const { user, isAuthenticated, hasLocationAccess, currentLocation, hasCompletedWelcome } = useSelector((state: RootState) => state.auth);
   const { userLocation } = useSelector((state: RootState) => state.products);
   
   const [updateLocation, { isLoading: isUpdatingLocation }] = useUpdateLocationMutation();
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [locationRequired, setLocationRequired] = useState(false);
 
-  // Temporarily disable token verification as it might be causing issues
-  // const { data: tokenVerification, error: tokenError, isLoading: isVerifyingToken } = useVerifyTokenQuery(
-  //   undefined, 
-  //   { 
-  //     skip: !isAuthenticated || !token,
-  //     refetchOnMountOrArgChange: false,
-  //     refetchOnFocus: false,
-  //     refetchOnReconnect: false,
-  //   }
-  // );
-
-  // // Handle token verification results - only if there's an actual error response
-  // useEffect(() => {
-  //   if (tokenError && isAuthenticated && !isVerifyingToken) {
-  //     const errorStatus = (tokenError as any)?.status;
-  //     // Only logout on specific auth errors (401, 403)
-  //     if (errorStatus === 401 || errorStatus === 403) {
-  //       console.log('Token verification failed with auth error, logging out user');
-  //       dispatch(logout());
-  //       dispatch(showSnackbar({ 
-  //         message: 'Your session has expired. Please login again.', 
-  //         type: 'error' 
-  //       }));
-  //     }
-  //   }
-  // }, [tokenError, isAuthenticated, isVerifyingToken, dispatch]);
-
-  // Check if user has any form of location data (user addresses, store location, or access granted)
   const hasLocationData = () => {
-    return hasAnyLocationAccess(user, userLocation, hasLocationAccess);
+    // Check for location in authSlice first, then fallback to productSlice and other sources
+    return !!(currentLocation || hasAnyLocationAccess(user, userLocation, hasLocationAccess));
   };
 
-  // Check if current route requires location
   const isLocationRequiredRoute = () => {
     const locationRequiredRoutes = ['(tabs)', 'home'];
     return locationRequiredRoutes.some(route => 
@@ -70,89 +40,90 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
     );
   };
 
-  // Check if user is new and needs location setup
+  const isOnWelcomePage = () => {
+    return segments.includes('welcome');
+  };
+
   const isNewUserNeedingLocation = () => {
     if (!user) return false;
     
     const isNewAccount = user.createdAt && 
-      (new Date().getTime() - new Date(user.createdAt).getTime()) < (7 * 24 * 60 * 60 * 1000); // 7 days
-    
-    const hasNoLocationData = !user.addresses?.length && !hasLocationAccess && !userLocation;
+      (new Date().getTime() - new Date(user.createdAt).getTime()) < (7 * 24 * 60 * 60 * 1000);
+    const hasNoLocationData = !user.addresses?.length && !hasLocationAccess && !userLocation && !currentLocation;
     
     return isNewAccount && hasNoLocationData;
   };
 
-  // Navigation guard - redirect if location is required but not available
+  // Only show location modal if:
+  // 1. Not on welcome page (welcome page handles its own location modal)
+  // 2. User is on a location-required route and has no location data
+  // 3. OR if it's a new user needing location after authentication
   useEffect(() => {
-    // Show location modal for location-required routes regardless of authentication status
-    if (isLocationRequiredRoute() && !hasLocationData() && !hasLocationAccess) {
+    if (isOnWelcomePage()) {
+      setShowLocationModal(false);
+      return;
+    }
+
+    if (isLocationRequiredRoute() && !hasLocationData() && hasCompletedWelcome) {
       setLocationRequired(true);
       setShowLocationModal(true);
     } else {
       setLocationRequired(false);
     }
-  }, [isAuthenticated, segments, user, hasLocationAccess, userLocation]);
+  }, [isAuthenticated, segments, user, hasLocationAccess, userLocation, currentLocation, hasCompletedWelcome]);
 
-  // Proactive location modal for new users
   useEffect(() => {
-    if (isNewUserNeedingLocation() && isAuthenticated) {
+    if (!isOnWelcomePage() && isNewUserNeedingLocation() && isAuthenticated) {
       const timer = setTimeout(() => {
         setShowLocationModal(true);
-        setLocationRequired(false); // Not strictly required, but encouraged
-      }, 2000); // Show after 2 seconds for new users
+        setLocationRequired(false);
+      }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, [user, isAuthenticated, hasLocationAccess, userLocation]);
+  }, [user, isAuthenticated, hasLocationAccess, userLocation, currentLocation]);
 
-  // Load user location into product store when available
+  // Sync location data between auth and product slices
   useEffect(() => {
-    if (user && hasLocationData()) {
-      const currentLocation = getUserCurrentLocation(user);
-      if (currentLocation) {
-        dispatch(setUserLocation(currentLocation));
+    if (currentLocation && !userLocation) {
+      dispatch(setUserLocation(currentLocation));
+    } else if (user && hasLocationData()) {
+      const currentUserLocation = getUserCurrentLocation(user);
+      if (currentUserLocation && !currentLocation) {
+        dispatch(setCurrentLocation(currentUserLocation));
       }
     }
-  }, [user, dispatch]);
-
-  // Show location modal for users without location access
-  useEffect(() => {
-    // Show location modal for users without location data or access, regardless of authentication
-    if (!hasLocationData() && !hasLocationAccess) {
-      const timer = setTimeout(() => {
-        setShowLocationModal(true);
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [user, hasLocationAccess, userLocation]);
+  }, [user, currentLocation, userLocation, dispatch]);
 
   const handleLocationRequest = async (): Promise<void> => {
     try {
       const hasPermission = await requestLocationPermission();      
       if (hasPermission) {
-        const location = await getCurrentLocation();
+        const location = await getCurrentLocationWithAddress({
+          timeout: 15000,
+          enableHighAccuracy: true,
+          showSnackbar: (message, type) => dispatch(showSnackbar({ message, type }))
+        });
         
         if (location) {
           try {
-            // Update product store with user location for all users
+            // Store location in auth slice
+            dispatch(setCurrentLocation(location));
             dispatch(setUserLocation(location));
             
-            // Only update user data via API if user is authenticated
             if (isAuthenticated && user) {
               const result = await updateLocation({
                 lat: location.lat,
                 lng: location.lng,
               }).unwrap();
               
-              // Add location to user's default address if they don't have any
               if (!user.addresses || user.addresses.length === 0) {
                 const newAddress = {
                   label: 'Current Location',
-                  street: '',
-                  city: '',
-                  state: '',
-                  pincode: '',
+                  street: location.address?.street || '',
+                  city: location.address?.city || '',
+                  state: location.address?.region || '',
+                  pincode: location.address?.postalCode || '',
                   location: {
                     lat: location.lat,
                     lng: location.lng,
@@ -165,7 +136,6 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
               }
             }
             
-            // Mark location as accessed for all users (authenticated or not)
             dispatch(setLocationAccess(true));
             
             dispatch(showSnackbar({ 
@@ -176,7 +146,6 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
             setShowLocationModal(false);
           } catch (apiError) {
             console.error('API error:', apiError);
-            // For unauthenticated users, still allow location access even if API fails
             if (!isAuthenticated) {
               dispatch(setLocationAccess(true));
               setShowLocationModal(false);
@@ -221,7 +190,6 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
     <View style={styles.container}>
       {children}
       
-      {/* Global Snackbar */}
       <Snackbar
         visible={visible}
         message={message}
@@ -229,7 +197,6 @@ export const AppWrapper: React.FC<AppWrapperProps> = ({ children }) => {
         onHide={handleSnackbarHide}
       />
       
-      {/* Location Access Modal */}
       <LocationModal
         visible={showLocationModal}
         onRequestLocation={handleLocationRequest}

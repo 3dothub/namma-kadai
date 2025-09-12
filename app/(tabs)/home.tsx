@@ -152,14 +152,6 @@ export default function HomeScreen() {
     }
   };
 
-  const filteredVendors = vendors.filter((vendor: Vendor) => 
-    vendor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    vendor.shopDetails.categories.some(category => 
-      category.toLowerCase().includes(searchQuery.toLowerCase())
-    ) ||
-    vendor.shopDetails.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   // Show loading state if location is being fetched
   if (!hasLocation) {
     return (

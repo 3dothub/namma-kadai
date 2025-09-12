@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Vendor, Product } from '../api/vendorApi';
+import { AddressData } from '@/services/locationService';
 
 export interface CartItem extends Product {
   quantity: number;
@@ -13,6 +14,7 @@ interface ProductState {
   userLocation: {
     lat: number;
     lng: number;
+    address?: AddressData
   } | null;
   nearbyVendors: Vendor[];
   isLoadingVendors: boolean;
@@ -41,7 +43,7 @@ const productSlice = createSlice({
     setProducts: (state, action: PayloadAction<Product[]>) => {
       state.products = action.payload;
     },
-    setUserLocation: (state, action: PayloadAction<{ lat: number; lng: number }>) => {
+    setUserLocation: (state, action: PayloadAction<{ lat: number; lng: number, address?: AddressData }>) => {
       state.userLocation = action.payload;
     },
     clearUserLocation: (state) => {
@@ -100,7 +102,7 @@ const productSlice = createSlice({
     setFavorites: (state, action: PayloadAction<Product[]>) => {
       state.favorites = action.payload;
     },
-    loadLocationBasedData: (state, action: PayloadAction<{ vendors: Vendor[]; location: { lat: number; lng: number } }>) => {
+    loadLocationBasedData: (state, action: PayloadAction<{ vendors: Vendor[]; location: { lat: number; lng: number; address: AddressData } }>) => {
       const { vendors, location } = action.payload;
       state.vendors = vendors;
       state.nearbyVendors = vendors;

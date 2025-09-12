@@ -1,20 +1,24 @@
 import { Redirect } from 'expo-router';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { hasAnyLocationAccess } from '@/utils/locationUtils';
 
 export default function Index() {
-  const { isAuthenticated, user, hasLocationAccess } = useSelector((state: RootState) => state.auth);
+  const { currentLocation, hasCompletedWelcome, hasLocationAccess } = useSelector((state: RootState) => state.auth);
   const { userLocation } = useSelector((state: RootState) => state.products);
   
-  // Check if user has any form of location access
-  const hasLocation = hasAnyLocationAccess(user, userLocation, hasLocationAccess);
+  // Check if user has location data from either authSlice or productSlice  
+  const hasLocation = !!(currentLocation || userLocation || hasLocationAccess);
   
-  // If user has location data, go directly to home
-  if (hasLocation) {
+  // If user hasn't completed welcome, show welcome page
+  if (!hasCompletedWelcome) {
+    return <Redirect href="/welcome" />;
+  }
+  
+  // If welcome is completed and has location, go to home
+  if (hasCompletedWelcome && hasLocation) {
     return <Redirect href="/(tabs)/home" />;
   }
   
-  // Otherwise, show welcome screen
-  return <Redirect href="/welcome" />;
+  // If welcome is completed but no location, still go to home (location modal will show via AppWrapper)
+  return <Redirect href="/(tabs)/home" />;
 }

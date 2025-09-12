@@ -7,9 +7,6 @@ import {
   Image,
   ScrollView,
   Dimensions,
-  Alert,
-  Platform,
-  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -73,43 +70,30 @@ export default function ProductDetailPage() {
   const [addToFavorites, { isLoading: isAddingToFavorites }] = useAddToFavoritesMutation();
   const [removeFromFavorites, { isLoading: isRemovingFromFavorites }] = useRemoveFromFavoritesMutation();
 
-  // Mock product images - in real app, get from product.images
-  const productImages = product ? [
-    getProductMainImage(product),
-    getProductMainImage(product), // Add more images if available
-    getProductMainImage(product),
-  ] : [];
 
   useEffect(() => {
     if (!product) {
-      // Product not found, go back
       router.back();
     }
   }, [product, router]);
 
-  // Set default order type based on vendor service types
   useEffect(() => {
     if (vendor?.serviceTypes) {
-      // If vendor only supports takeaway, set it as default
       if (vendor.serviceTypes.takeaway && !vendor.serviceTypes.delivery) {
         setOrderType('takeaway');
       }
-      // If vendor only supports delivery, set it as default
       else if (vendor.serviceTypes.delivery && !vendor.serviceTypes.takeaway) {
         setOrderType('delivery');
       }
-      // If vendor supports both, default to delivery
       else if (vendor.serviceTypes.delivery) {
         setOrderType('delivery');
       }
-      // Fallback to takeaway if no delivery
       else {
         setOrderType('takeaway');
       }
     }
   }, [vendor]);
 
-  // Helper function to check if order type is available
   const isOrderTypeAvailable = (type: 'delivery' | 'takeaway') => {
     if (!vendor?.serviceTypes) return true; // Default to available if no vendor info
     return vendor.serviceTypes[type];
@@ -191,23 +175,25 @@ export default function ProductDetailPage() {
     <View style={styles.imageCarouselContainer}>
       <FlatList
         ref={flatListRef}
-        data={productImages}
+        data={product.images}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={(event: any) => {
-          const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+          const index = Math.round(event.nativeEvent.contentOffset.x / (screenWidth - 40));
           setCurrentImageIndex(index);
         }}
         renderItem={({ item }: { item: string }) => (
-          <Image source={{ uri: item }} style={styles.carouselImage} resizeMode="contain" />
+          <View style={styles.imageWrapper}>
+            <Image source={{ uri: item }} style={styles.carouselImage} resizeMode="cover"/>
+          </View>
         )}
         keyExtractor={(item: string, index: number) => index.toString()}
       />
       
       {/* Image indicators */}
       <View style={styles.imageIndicators}>
-        {productImages.map((_, index) => (
+        {product.images.map((_, index) => (
           <View
             key={index}
             style={[
@@ -245,7 +231,7 @@ export default function ProductDetailPage() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
+          <Ionicons name="arrow-back" size={20} color="#10B981" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Product Details</Text>
         <View style={styles.headerRight} />
@@ -269,12 +255,14 @@ export default function ProductDetailPage() {
 
           {/* Price */}
           <View style={styles.priceSection}>
-            {product.offerPrice && (
-              <Text style={styles.originalPrice}>₹{product.price}</Text>
-            )}
-            <Text style={styles.currentPrice}>₹{product.offerPrice || product.price}</Text>
+            <View style={styles.priceRow}>
+              {product.offerPrice && (
+                <Text style={styles.originalPrice}>₹{product.price}</Text>
+              )}
+              <Text style={styles.currentPrice}>₹{product.offerPrice || product.price}</Text>
+            </View>
             <View style={styles.stockBadge}>
-              <Text style={styles.stockText}>{product.stock} left</Text>
+              <Text style={styles.stockText}>{product.stock} in stock</Text>
             </View>
           </View>
 
@@ -306,13 +294,15 @@ export default function ProductDetailPage() {
                   ]}
                   onPress={() => setOrderType('delivery')}
                 >
-                  <Ionicons name="bicycle-outline" size={18} color={orderType === 'delivery' ? '#10B981' : '#6B7280'} />
+                  {orderType !== 'delivery' && (
+                    <Ionicons name="bicycle-outline" size={16} color="#64748B" />
+                  )}
                   <View style={styles.orderTypeTextContainer}>
                     <Text style={[styles.orderTypeText, orderType === 'delivery' && styles.orderTypeActiveText]}>
                       Delivery
                     </Text>
                     {vendor?.deliverySettings && (
-                      <Text style={styles.orderTypeSubtext}>
+                      <Text style={[styles.orderTypeSubtext, orderType === 'delivery' && styles.orderTypeActiveSubtext]}>
                         ₹{vendor.deliverySettings.deliveryCharge || 0} fee
                       </Text>
                     )}
@@ -330,12 +320,14 @@ export default function ProductDetailPage() {
                   ]}
                   onPress={() => setOrderType('takeaway')}
                 >
-                  <Ionicons name="bag-handle-outline" size={18} color={orderType === 'takeaway' ? '#10B981' : '#6B7280'} />
+                  {orderType !== 'takeaway' && (
+                    <Ionicons name="bag-handle-outline" size={16} color="#64748B" />
+                  )}
                   <View style={styles.orderTypeTextContainer}>
                     <Text style={[styles.orderTypeText, orderType === 'takeaway' && styles.orderTypeActiveText]}>
                       Takeaway
                     </Text>
-                    <Text style={styles.orderTypeSubtext}>
+                    <Text style={[styles.orderTypeSubtext, orderType === 'takeaway' && styles.orderTypeActiveSubtext]}>
                       Pickup at store
                     </Text>
                   </View>
@@ -392,7 +384,7 @@ export default function ProductDetailPage() {
                 onPress={() => handleQuantityChange(-1)}
                 disabled={quantity <= 1}
               >
-                <Ionicons name="remove" size={20} color={quantity <= 1 ? '#D1D5DB' : '#6B7280'} />
+                <Ionicons name="remove" size={18} color={quantity <= 1 ? '#CBD5E1' : '#10B981'} />
               </TouchableOpacity>
               <Text style={styles.quantityText}>{quantity}</Text>
               <TouchableOpacity
@@ -400,7 +392,7 @@ export default function ProductDetailPage() {
                 onPress={() => handleQuantityChange(1)}
                 disabled={quantity >= product.stock}
               >
-                <Ionicons name="add" size={20} color={quantity >= product.stock ? '#D1D5DB' : '#6B7280'} />
+                <Ionicons name="add" size={18} color={quantity >= product.stock ? '#CBD5E1' : '#10B981'} />
               </TouchableOpacity>
             </View>
           </View>
@@ -492,29 +484,34 @@ export default function ProductDetailPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FAFFFE',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    backgroundColor: 'transparent',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#10B981',
+    letterSpacing: 0.5,
   },
   headerRight: {
     width: 40,
@@ -523,55 +520,73 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   imageCarouselContainer: {
-    height: screenWidth * 0.5,
+    height: 'auto',
     position: 'relative',
+    backgroundColor: '#F8FFF8',
+    marginHorizontal: 20,
+    marginTop: 8,
+    borderRadius: 20,
+    overflow: 'hidden',
   },
   carouselImage: {
-    width: screenWidth,
-    height: screenWidth * 0.5,
+    width: '100%',
+    aspectRatio: 1,
+  },
+  imageWrapper: {
+    width: screenWidth - 40,
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
   },
   imageIndicators: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 16,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
+    gap: 6,
   },
   indicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(16, 185, 129, 0.3)',
   },
   activeIndicator: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#10B981',
+    width: 20,
+    height: 6,
+    borderRadius: 3,
   },
   favoriteButton: {
     position: 'absolute',
-    top: 20,
-    right: 20,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    top: 16,
+    right: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 6,
+    elevation: 3,
   },
   productInfo: {
     padding: 24,
+    paddingTop: 20,
   },
   productName: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 12,
+    color: '#0F172A',
+    marginBottom: 6,
+    letterSpacing: -0.8,
+    lineHeight: 32,
   },
   ratingSection: {
     flexDirection: 'row',
@@ -581,57 +596,72 @@ const styles = StyleSheet.create({
   },
   starsContainer: {
     flexDirection: 'row',
-    gap: 2,
+    gap: 1,
   },
   ratingText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#64748B',
     fontWeight: '500',
   },
   priceSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     marginBottom: 24,
+    backgroundColor: '#F0FDF4',
+    padding: 16,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981',
   },
   originalPrice: {
-    fontSize: 18,
-    color: '#9CA3AF',
+    fontSize: 14,
+    color: '#64748B',
     textDecorationLine: 'line-through',
+    marginBottom: 2,
   },
   currentPrice: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '800',
     color: '#10B981',
+    letterSpacing: -1,
+  },
+  priceRow: {
+    marginBottom: 8,
   },
   stockBadge: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    alignSelf: 'flex-start',
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
   stockText: {
-    fontSize: 12,
-    color: '#92400E',
+    fontSize: 10,
+    color: '#166534',
     fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 16,
+    color: '#0F172A',
+    marginBottom: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   productDescription: {
-    fontSize: 16,
-    color: '#6B7280',
-    lineHeight: 24,
+    fontSize: 15,
+    color: '#475569',
+    lineHeight: 22,
   },
   orderTypeContainer: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 8,
+    backgroundColor: '#F8FAFC',
+    padding: 4,
+    borderRadius: 16,
   },
   orderTypeButton: {
     flex: 1,
@@ -640,53 +670,59 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: 'transparent',
   },
   orderTypeActive: {
-    borderColor: '#10B981',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#10B981',
   },
   orderTypeText: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   orderTypeActiveText: {
-    color: '#10B981',
+    color: '#FFFFFF',
   },
   orderTypeTextContainer: {
     flex: 1,
     alignItems: 'center',
   },
   orderTypeSubtext: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    marginTop: 2,
+    fontSize: 9,
+    color: '#94A3B8',
+    marginTop: 1,
     textAlign: 'center',
+    fontWeight: '500',
+  },
+  orderTypeActiveSubtext: {
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   orderTypeFullWidth: {
     flex: 1,
   },
   vendorInfo: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginBottom: 12,
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginBottom: 8,
     fontStyle: 'italic',
   },
   serviceNote: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#F59E0B',
-    marginTop: 12,
+    marginTop: 8,
     fontStyle: 'italic',
     textAlign: 'center',
   },
   scheduleCompact: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
+    backgroundColor: '#F8FAFC',
+    padding: 4,
+    borderRadius: 12,
   },
   scheduleCompactOption: {
     flex: 1,
@@ -694,25 +730,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-    gap: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+    gap: 4,
   },
   scheduleCompactSelected: {
-    borderColor: '#10B981',
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#10B981',
   },
   scheduleCompactText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6B7280',
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   scheduleCompactTextSelected: {
-    color: '#10B981',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: '700',
   },
   scheduleContainer: {
     gap: 12,
@@ -766,23 +801,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 24,
+    gap: 20,
+    backgroundColor: '#F8FAFC',
+    padding: 16,
+    borderRadius: 20,
   },
   quantityButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#F3F4F6',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   quantityButtonDisabled: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F1F5F9',
+    borderColor: '#E2E8F0',
   },
   quantityText: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#10B981',
     minWidth: 40,
     textAlign: 'center',
   },
@@ -893,26 +934,31 @@ const styles = StyleSheet.create({
   bottomAction: {
     paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 32,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
+    paddingBottom: 28,
+    backgroundColor: '#FAFFFE',
+    borderTopWidth: 0,
   },
   totalSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    backgroundColor: '#F0FDF4',
+    padding: 16,
+    borderRadius: 16,
   },
   totalLabel: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#6B7280',
+    color: '#166534',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   totalPrice: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#10B981',
+    letterSpacing: -1,
   },
   addToCartButton: {
     backgroundColor: '#10B981',
@@ -920,14 +966,16 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowRadius: 12,
+    elevation: 8,
   },
   addToCartText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
 });

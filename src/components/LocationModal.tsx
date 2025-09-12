@@ -59,7 +59,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
                 />
               </View>
               <Text style={styles.title}>
-                {required ? 'Location Required' : 'Enable Locationssss'}
+                {required ? 'Location Required' : 'Enable Location'}
               </Text>
               <Text style={styles.subtitle}>
                 {required 

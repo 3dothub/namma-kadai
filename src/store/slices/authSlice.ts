@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { authApi } from '../api/authApi';
+import { LocationWithAddress } from '../../services/locationService';
 
 export interface UserAddress {
   label: string;
@@ -37,6 +38,8 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   hasLocationAccess: boolean;
+  currentLocation: LocationWithAddress | null;
+  hasCompletedWelcome: boolean;
 }
 
 const initialState: AuthState = {
@@ -46,6 +49,8 @@ const initialState: AuthState = {
   isLoading: false,
   error: null,
   hasLocationAccess: false,
+  currentLocation: null,
+  hasCompletedWelcome: false,
 };
 
 const authSlice = createSlice({
@@ -76,6 +81,8 @@ const authSlice = createSlice({
         isLoading: false,
         error: null,
         hasLocationAccess: false,
+        currentLocation: null,
+        hasCompletedWelcome: false,
       };
     },
     clearError: (state) => {
@@ -136,6 +143,17 @@ const authSlice = createSlice({
           state.user.favorites.splice(index, 1);
         }
       }
+    },
+    setCurrentLocation: (state, action: PayloadAction<LocationWithAddress>) => {
+      state.currentLocation = action.payload;
+      state.hasLocationAccess = true;
+    },
+    clearCurrentLocation: (state) => {
+      state.currentLocation = null;
+      state.hasLocationAccess = false;
+    },
+    setWelcomeCompleted: (state, action: PayloadAction<boolean>) => {
+      state.hasCompletedWelcome = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -218,6 +236,9 @@ export const {
   addToCart,
   removeFromCart,
   updateCartQuantity,
-  toggleFavorite
+  toggleFavorite,
+  setCurrentLocation,
+  clearCurrentLocation,
+  setWelcomeCompleted
 } = authSlice.actions;
 export default authSlice.reducer;
