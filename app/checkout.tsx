@@ -32,7 +32,7 @@ export default function CheckoutScreen() {
   
   // Get vendor information for service type restrictions
   const vendorId = cart.length > 0 ? getProductVendorId(cart[0]) : null;
-  const currentVendor = vendors.find(v => v._id === vendorId);
+  const currentVendor = vendors.find((v: { _id: string | null; }) => v._id === vendorId);
   
   // Get vendor details if not available in vendors list
   const { data: vendorData } = useGetVendorProductsQuery(
@@ -185,7 +185,7 @@ export default function CheckoutScreen() {
 
   // Calculate totals
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cart.reduce((total: number, item: { price: number; quantity: number; }) => total + (item.price * item.quantity), 0);
   };
 
   const getDeliveryFee = () => {
@@ -263,7 +263,7 @@ export default function CheckoutScreen() {
       console.log('Vendor ID:', vendorId);
       
       // Prepare order items
-      const orderItems = cart.map(item => ({
+      const orderItems = cart.map((item: { _id: any; name: any; price: any; quantity: any; }) => ({
         productId: item._id,
         name: item.name,
         price: item.price,
@@ -408,66 +408,94 @@ export default function CheckoutScreen() {
           <Text style={styles.sectionTitle}>Order Type</Text>
           {vendor && (
             <Text style={styles.vendorInfo}>
-              Available services: {vendor.serviceTypes.delivery && 'Delivery'}{vendor.serviceTypes.delivery && vendor.serviceTypes.takeaway && ', '}
+              Available: {vendor.serviceTypes.delivery && 'Delivery'}{vendor.serviceTypes.delivery && vendor.serviceTypes.takeaway && ' • '}
               {vendor.serviceTypes.takeaway && 'Takeaway'}
             </Text>
           )}
           <View style={styles.orderTypeContainer}>
-            <TouchableOpacity
-              style={[
-                styles.orderTypeOption,
-                orderType === 'delivery' && styles.orderTypeSelected,
-                !isOrderTypeAvailable('delivery') && styles.orderTypeDisabled,
-              ]}
-              onPress={() => isOrderTypeAvailable('delivery') && setOrderType('delivery')}
-              disabled={!isOrderTypeAvailable('delivery')}
+            {/* Only show delivery option if vendor supports it */}
+            {isOrderTypeAvailable('delivery') && (
+              <TouchableOpacity
+                style={[
+                  styles.orderTypeOption,
+                  orderType === 'delivery' && styles.orderTypeSelected,
+                  !vendor?.serviceTypes.takeaway && styles.orderTypeFullWidth, // Full width if only option
+                ]}
+                onPress={() => setOrderType('delivery')}
+              >
+                <Ionicons 
+                  name="bicycle-outline" 
+                  size={20} 
+                  color={orderType === 'delivery' ? '#22C55E' : '#6B7280'} 
+                />
+                <Text style={[
+                  styles.orderTypeText,
+                  orderType === 'delivery' && styles.orderTypeTextSelected,
+                ]}>
+                  Delivery
+                </Text>
+                {vendor?.deliverySettings && (
+                  <Text style={styles.orderTypeSubtext}>
+                    ₹{vendor.deliverySettings.deliveryCharge || 0} fee
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
+            
+            {/* Only show takeaway option if vendor supports it */}
+            {isOrderTypeAvailable('takeaway') && (
+              <TouchableOpacity
+                style={[
+                  styles.orderTypeOption,
+                  orderType === 'takeaway' && styles.orderTypeSelected,
+                  !vendor?.serviceTypes.delivery && styles.orderTypeFullWidth, // Full width if only option
+                ]}
+                onPress={() => setOrderType('takeaway')}
+              >
+                <Ionicons 
+                  name="bag-outline" 
+                  size={20} 
+                  color={orderType === 'takeaway' ? '#22C55E' : '#6B7280'} 
+                />
+                <Text style={[
+                  styles.orderTypeText,
+                  orderType === 'takeaway' && styles.orderTypeTextSelected,
+                ]}>
+                  Takeaway
+                </Text>
+                <Text style={styles.orderTypeSubtext}>
+                  Pick up at store
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          
+          {/* Show message if vendor has limited service types */}
+          {vendor && (!vendor.serviceTypes.delivery || !vendor.serviceTypes.takeaway) && (
+            <Text style={styles.serviceNote}>
+              {!vendor.serviceTypes.delivery && vendor.serviceTypes.takeaway && "⚠️ This vendor only offers takeaway service"}
+              {vendor.serviceTypes.delivery && !vendor.serviceTypes.takeaway && "ℹ️ This vendor only offers delivery service"}
+            </Text>
+          )}
+        </View>
+
+        {/* Compact Schedule Time */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Delivery Time</Text>
+          <View style={styles.scheduleCompact}>
+            <TouchableOpacity 
+              style={[styles.scheduleCompactOption, styles.scheduleCompactSelected]}
+              disabled
             >
-              <Ionicons 
-                name="bicycle-outline" 
-                size={24} 
-                color={
-                  !isOrderTypeAvailable('delivery') 
-                    ? '#D1D5DB' 
-                    : orderType === 'delivery' 
-                      ? '#22C55E' 
-                      : '#6B7280'
-                } 
-              />
-              <Text style={[
-                styles.orderTypeText,
-                orderType === 'delivery' && styles.orderTypeTextSelected,
-                !isOrderTypeAvailable('delivery') && styles.orderTypeTextDisabled,
-              ]}>
-                Delivery
-              </Text>
+              <Ionicons name="time-outline" size={16} color="#22C55E" />
+              <Text style={styles.scheduleCompactText}>ASAP (20-30 mins)</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.orderTypeOption,
-                orderType === 'takeaway' && styles.orderTypeSelected,
-                !isOrderTypeAvailable('takeaway') && styles.orderTypeDisabled,
-              ]}
-              onPress={() => isOrderTypeAvailable('takeaway') && setOrderType('takeaway')}
-              disabled={!isOrderTypeAvailable('takeaway')}
+            <TouchableOpacity 
+              style={styles.scheduleCompactOption}
+              onPress={() => Alert.alert('Coming Soon', 'Schedule order feature will be available soon!')}
             >
-              <Ionicons 
-                name="bag-outline" 
-                size={24} 
-                color={
-                  !isOrderTypeAvailable('takeaway') 
-                    ? '#D1D5DB' 
-                    : orderType === 'takeaway' 
-                      ? '#22C55E' 
-                      : '#6B7280'
-                } 
-              />
-              <Text style={[
-                styles.orderTypeText,
-                orderType === 'takeaway' && styles.orderTypeTextSelected,
-                !isOrderTypeAvailable('takeaway') && styles.orderTypeTextDisabled,
-              ]}>
-                Takeaway
-              </Text>
+              <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+              <Text style={[styles.scheduleCompactText, { color: '#6B7280' }]}>Schedule Later</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -523,34 +551,44 @@ export default function CheckoutScreen() {
             {user?.addresses && user.addresses.length > 0 && (
               <View style={styles.savedAddresses}>
                 <Text style={styles.savedAddressesTitle}>Saved Addresses</Text>
-                {user.addresses.map((address, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.savedAddressOption,
-                      selectedAddressIndex === index && !useCurrentLocation && styles.savedAddressSelected,
-                    ]}
-                    onPress={() => handleSelectAddress(index)}
-                  >
-                    <View style={styles.savedAddressContent}>
-                      <Ionicons 
-                        name="home" 
-                        size={18} 
-                        color={selectedAddressIndex === index && !useCurrentLocation ? '#22C55E' : '#6B7280'} 
-                      />
-                      <View style={styles.savedAddressText}>
-                        <Text style={[
-                          styles.savedAddressLabel,
-                          selectedAddressIndex === index && !useCurrentLocation && styles.savedAddressLabelSelected,
-                        ]}>
-                          {address.label || `Address ${index + 1}`}
-                        </Text>
-                        <Text style={styles.savedAddressDesc}>
-                          {address.street}, {address.city}, {address.state} - {address.pincode}
-                        </Text>
+                {user.addresses.map(
+                  (
+                    address: {
+                      label: any;
+                      street: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
+                      city: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
+                      state: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
+                      pincode: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
+                    },
+                    index: number
+                  ) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.savedAddressOption,
+                        selectedAddressIndex === index && !useCurrentLocation && styles.savedAddressSelected,
+                      ]}
+                      onPress={() => handleSelectAddress(index)}
+                    >
+                      <View style={styles.savedAddressContent}>
+                        <Ionicons 
+                          name="home" 
+                          size={18} 
+                          color={selectedAddressIndex === index && !useCurrentLocation ? '#22C55E' : '#6B7280'} 
+                        />
+                        <View style={styles.savedAddressText}>
+                          <Text style={[
+                            styles.savedAddressLabel,
+                            selectedAddressIndex === index && !useCurrentLocation && styles.savedAddressLabelSelected,
+                          ]}>
+                            {address.label || `Address ${index + 1}`}
+                          </Text>
+                          <Text style={styles.savedAddressDesc}>
+                            {address.street}, {address.city}, {address.state} - {address.pincode}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
+                    </TouchableOpacity>
                 ))}
               </View>
             )}
@@ -598,13 +636,13 @@ export default function CheckoutScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary</Text>
           <View style={styles.orderSummary}>
-            {cart.map((item) => (
+            {cart.map((item: { _id: React.Key | null | undefined; name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; quantity: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; price: number; }) => (
               <View key={item._id} style={styles.orderItem}>
                 <Text style={styles.orderItemName}>
                   {item.name} x {item.quantity}
                 </Text>
                 <Text style={styles.orderItemPrice}>
-                  ₹{item.price * item.quantity}
+                  ₹{Number(item.price) * Number(item.quantity)}
                 </Text>
               </View>
             ))}
@@ -758,6 +796,48 @@ const styles = StyleSheet.create({
   orderTypeTextSelected: {
     color: '#22C55E',
     fontWeight: '600',
+  },
+  orderTypeSubtext: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  orderTypeFullWidth: {
+    flex: 1,
+  },
+  serviceNote: {
+    fontSize: 12,
+    color: '#F59E0B',
+    marginTop: 12,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  scheduleCompact: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  scheduleCompactOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+    gap: 6,
+  },
+  scheduleCompactSelected: {
+    borderColor: '#22C55E',
+    backgroundColor: '#F0FDF4',
+  },
+  scheduleCompactText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#22C55E',
   },
   addressContainer: {
     gap: 12,

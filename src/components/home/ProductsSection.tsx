@@ -8,7 +8,6 @@ interface ProductsSectionProps {
   selectedVendor: Vendor | null;
   products: Product[];
   isLoading: boolean;
-  onProductPress: (product: Product) => void;
   onToggleFavorite: (productId: string) => void;
   onAddToCart: (product: Product) => void;
 }
@@ -17,7 +16,6 @@ export const ProductsSection: React.FC<ProductsSectionProps> = ({
   selectedVendor,
   products,
   isLoading,
-  onProductPress,
   onToggleFavorite,
   onAddToCart,
 }) => {
@@ -34,7 +32,7 @@ export const ProductsSection: React.FC<ProductsSectionProps> = ({
             <ProductCard
               key={product._id}
               product={product}
-              onPress={onProductPress}
+              vendorId={selectedVendor._id}
               onToggleFavorite={onToggleFavorite}
               onAddToCart={onAddToCart}
             />

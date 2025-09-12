@@ -72,9 +72,6 @@ export default function HomeScreen() {
     }
   }, [isLoadingProducts, isVendorChanging]);
 
-console.log("selectedVendorId", selectedVendor?._id);
-console.log("vendorProducts", vendorProducts);
-
   const addToCartHandler = (product: Product) => {
     dispatch(addProductToCart({ product, quantity: 1 }));
     dispatch(showSnackbar({ message: `${product.name} added to cart!`, type: 'success' }));
@@ -106,11 +103,11 @@ console.log("vendorProducts", vendorProducts);
   };
 
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + ((item.offerPrice || item.price) * item.quantity), 0);
+    return cart.reduce((total: number, item: { offerPrice: any; price: any; quantity: number; }) => total + ((item.offerPrice || item.price) * item.quantity), 0);
   };
 
   const getTotalItems = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
+    return cart.reduce((total: any, item: { quantity: any; }) => total + item.quantity, 0);
   };
 
   const handleToggleFavorite = (productId: string) => {
@@ -203,10 +200,6 @@ console.log("vendorProducts", vendorProducts);
           selectedVendor={selectedVendor}
           products={vendorProducts}
           isLoading={isLoadingProducts || isVendorChanging}
-          onProductPress={(product) => {
-            setSelectedProduct(product);
-            setShowProductDetail(true);
-          }}
           onToggleFavorite={handleToggleFavorite}
           onAddToCart={addToCartHandler}
         />

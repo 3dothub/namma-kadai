@@ -1,23 +1,28 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Product, getProductMainImage, isProductAvailable } from '@/store/api/vendorApi';
 
 interface ProductCardProps {
   product: Product;
-  onPress: (product: Product) => void;
+  vendorId: string;
   onToggleFavorite: (productId: string) => void;
   onAddToCart: (product: Product) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
-  onPress,
+  vendorId,
   onToggleFavorite,
   onAddToCart,
 }) => {
+  const handlePress = () => {
+    router.push(`/product/${product._id}?vendorId=${vendorId}`);
+  };
+
   return (
-    <TouchableOpacity style={styles.productCard} onPress={() => onPress(product)}>
+    <TouchableOpacity style={styles.productCard} onPress={handlePress}>
       <View style={styles.cardContent}>
         {/* Product Image */}
         <View style={styles.imageContainer}>

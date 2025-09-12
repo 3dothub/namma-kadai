@@ -71,11 +71,11 @@ export default function FavouriteScreen() {
   };
 
   const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + ((item.offerPrice || item.price) * item.quantity), 0);
+    return cart.reduce((total: number, item: { offerPrice: any; price: any; quantity: number; }) => total + ((item.offerPrice || item.price) * item.quantity), 0);
   };
 
   const getTotalItems = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
+    return cart.reduce((total: any, item: { quantity: any; }) => total + item.quantity, 0);
   };
 
   if (isLoading && !refreshing) {
@@ -158,7 +158,7 @@ export default function FavouriteScreen() {
               <ProductCard
                 key={product._id}
                 product={fullProduct}
-                onPress={handleProductPress}
+                vendorId={typeof fullProduct.vendorId === 'string' ? fullProduct.vendorId : fullProduct.vendorId.$oid || ''}
                 onToggleFavorite={handleRemoveFavorite}
                 onAddToCart={handleAddToCart}
               />
