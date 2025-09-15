@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Namma Kadai",
+    "slug": "namma-kadai",
     "userInterfaceStyle": "automatic",
     "scheme": "namma-kadai",
     "extra": {
@@ -10,7 +11,8 @@
     },
     "owner": "3dothub",
     "android": {
-      "package": "com.threedothub.nammakadai"
+      "package": "com.threedothub.nammakadai",
+      "edgeToEdgeEnabled": true
     },
     "ios": {
       "bundleIdentifier": "com.3dothub.nammakadai",
@@ -21,7 +23,8 @@
     "plugins": [
       "expo-build-properties",
       "expo-router",
-      "expo-font"
+      "expo-font",
+      "expo-system-ui"
     ]
   }
 }
