@@ -2,6 +2,7 @@
   "expo": {
     "name": "Namma Kadai",
     "slug": "namma-kadai",
+    "version": "1.0.0",
     "userInterfaceStyle": "automatic",
     "scheme": "namma-kadai",
     "extra": {
@@ -12,10 +13,12 @@
     "owner": "3dothub",
     "android": {
       "package": "com.threedothub.nammakadai",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "versionCode": 1
     },
     "ios": {
       "bundleIdentifier": "com.3dothub.nammakadai",
+      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
