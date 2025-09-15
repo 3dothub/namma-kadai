@@ -1,6 +1,5 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Vendor, Product } from '../api/vendorApi';
-import { AddressData } from '@/services/locationService';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { Vendor, Product } from "../api/vendorApi";
 
 export interface CartItem extends Product {
   quantity: number;
@@ -11,11 +10,6 @@ interface ProductState {
   products: Product[];
   favorites: Product[];
   cart: CartItem[];
-  userLocation: {
-    lat: number;
-    lng: number;
-    address?: AddressData
-  } | null;
   nearbyVendors: Vendor[];
   isLoadingVendors: boolean;
   isLoadingProducts: boolean;
@@ -26,28 +20,25 @@ const initialState: ProductState = {
   products: [],
   favorites: [],
   cart: [],
-  userLocation: null,
   nearbyVendors: [],
   isLoadingVendors: false,
   isLoadingProducts: false,
 };
 
 const productSlice = createSlice({
-  name: 'product',
+  name: "product",
   initialState,
   reducers: {
     setVendors: (state, action: PayloadAction<Vendor[]>) => {
       state.vendors = action.payload;
-      state.products = action.payload.flatMap(vendor => vendor.products || []);
+      state.nearbyVendors = action.payload;
+      state.products = action.payload.flatMap((vendor) => vendor.products || []);
+      // When vendors are loaded, products are also loaded
+      state.isLoadingProducts = false;
     },
     setProducts: (state, action: PayloadAction<Product[]>) => {
       state.products = action.payload;
-    },
-    setUserLocation: (state, action: PayloadAction<{ lat: number; lng: number, address?: AddressData }>) => {
-      state.userLocation = action.payload;
-    },
-    clearUserLocation: (state) => {
-      state.userLocation = null;
+      state.isLoadingProducts = false;
     },
     setNearbyVendors: (state, action: PayloadAction<Vendor[]>) => {
       state.nearbyVendors = action.payload;
@@ -60,8 +51,8 @@ const productSlice = createSlice({
     },
     addProductToCart: (state, action: PayloadAction<{ product: Product; quantity: number }>) => {
       const { product, quantity } = action.payload;
-      const existingItem = state.cart.find(item => item._id === product._id);
-      
+      const existingItem = state.cart.find((item) => item._id === product._id);
+
       if (existingItem) {
         existingItem.quantity += quantity;
       } else {
@@ -69,14 +60,14 @@ const productSlice = createSlice({
       }
     },
     removeProductFromCart: (state, action: PayloadAction<string>) => {
-      state.cart = state.cart.filter(item => item._id !== action.payload);
+      state.cart = state.cart.filter((item) => item._id !== action.payload);
     },
     updateCartItemQuantity: (state, action: PayloadAction<{ productId: string; quantity: number }>) => {
       const { productId, quantity } = action.payload;
-      const item = state.cart.find(item => item._id === productId);
+      const item = state.cart.find((item) => item._id === productId);
       if (item) {
         if (quantity <= 0) {
-          state.cart = state.cart.filter(item => item._id !== productId);
+          state.cart = state.cart.filter((item) => item._id !== productId);
         } else {
           item.quantity = quantity;
         }
@@ -87,13 +78,13 @@ const productSlice = createSlice({
     },
     toggleFavorite: (state, action: PayloadAction<string>) => {
       const productId = action.payload;
-      const product = state.products.find(p => p._id === productId);
-      
+      const product = state.products.find((p) => p._id === productId);
+
       if (product) {
-        const isFavorite = state.favorites.some(fav => fav._id === productId);
-        
+        const isFavorite = state.favorites.some((fav) => fav._id === productId);
+
         if (isFavorite) {
-          state.favorites = state.favorites.filter(fav => fav._id !== productId);
+          state.favorites = state.favorites.filter((fav) => fav._id !== productId);
         } else {
           state.favorites.push(product);
         }
@@ -102,15 +93,7 @@ const productSlice = createSlice({
     setFavorites: (state, action: PayloadAction<Product[]>) => {
       state.favorites = action.payload;
     },
-    loadLocationBasedData: (state, action: PayloadAction<{ vendors: Vendor[]; location: { lat: number; lng: number; address: AddressData } }>) => {
-      const { vendors, location } = action.payload;
-      state.vendors = vendors;
-      state.nearbyVendors = vendors;
-      state.products = vendors.flatMap(vendor => vendor.products || []);
-      state.userLocation = location;
-    },
     clearAllProductData: (state) => {
-      // Reset all product state to initial values
       Object.assign(state, initialState);
     },
   },
@@ -119,8 +102,6 @@ const productSlice = createSlice({
 export const {
   setVendors,
   setProducts,
-  setUserLocation,
-  clearUserLocation,
   setNearbyVendors,
   setLoadingVendors,
   setLoadingProducts,
@@ -130,7 +111,6 @@ export const {
   clearCart,
   toggleFavorite,
   setFavorites,
-  loadLocationBasedData,
   clearAllProductData,
 } = productSlice.actions;
 

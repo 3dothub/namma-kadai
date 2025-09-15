@@ -1,7 +1,7 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from '../index';
-import { authUrl } from '../../config/apiBaseUrl';
-import { User } from '../slices/authSlice';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { RootState } from "../index";
+import { authUrl } from "../../config/apiBaseUrl";
+import { User } from "../slices/userSlice";
 
 interface LoginRequest {
   email: string;
@@ -21,39 +21,38 @@ interface AuthResponse {
 }
 
 export const authApi = createApi({
-  reducerPath: 'authApi',
+  reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
     baseUrl: authUrl,
     prepareHeaders: (headers, { getState }) => {
-      debugger;
-      const token = (getState() as RootState).auth.token;
+      const token = (getState() as RootState).user.token;
       if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+        headers.set("authorization", `Bearer ${token}`);
       }
       return headers;
     },
   }),
-  tagTypes: ['Auth'],
+  tagTypes: ["Auth"],
   endpoints: (builder) => ({
     login: builder.mutation<AuthResponse, LoginRequest>({
       query: (credentials) => ({
-        url: '/login',
-        method: 'POST',
+        url: "/login",
+        method: "POST",
         body: credentials,
       }),
-      invalidatesTags: ['Auth'],
+      invalidatesTags: ["Auth"],
     }),
     register: builder.mutation<AuthResponse, RegisterRequest>({
       query: (userData) => ({
-        url: '/register',
-        method: 'POST',
+        url: "/register",
+        method: "POST",
         body: userData,
       }),
-      invalidatesTags: ['Auth'],
+      invalidatesTags: ["Auth"],
     }),
     verifyToken: builder.query<{ user: User }, void>({
-      query: () => '/verify',
-      providesTags: ['Auth'],
+      query: () => "/verify",
+      providesTags: ["Auth"],
     }),
   }),
 });

@@ -1,13 +1,13 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from '../index';
-import { baseUrl } from '../../config/apiBaseUrl';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { RootState } from "../index";
+import { baseUrl } from "../../config/apiBaseUrl";
 
 export interface Notification {
   _id: string;
   userId: string;
   title: string;
   message: string;
-  type: 'order' | 'promotion' | 'system' | 'delivery';
+  type: "order" | "promotion" | "system" | "delivery";
   isRead: boolean;
   data?: {
     orderId?: string;
@@ -37,59 +37,59 @@ export interface DeleteNotificationResponse {
 }
 
 export const notificationApi = createApi({
-  reducerPath: 'notificationApi',
+  reducerPath: "notificationApi",
   baseQuery: fetchBaseQuery({
     baseUrl: `${baseUrl}/notifications`,
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token;
+      const token = (getState() as RootState).user.token;
       if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+        headers.set("authorization", `Bearer ${token}`);
       }
-      headers.set('content-type', 'application/json');
+      headers.set("content-type", "application/json");
       return headers;
     },
   }),
-  tagTypes: ['Notification'],
+  tagTypes: ["Notification"],
   endpoints: (builder) => ({
     getNotifications: builder.query<GetNotificationsResponse, { page?: number; limit?: number; isRead?: boolean }>({
       query: ({ page = 1, limit = 20, isRead } = {}) => ({
-        url: '',
-        method: 'GET',
+        url: "",
+        method: "GET",
         params: {
           page,
           limit,
           ...(isRead !== undefined && { isRead }),
         },
       }),
-      providesTags: ['Notification'],
+      providesTags: ["Notification"],
     }),
     markNotificationAsRead: builder.mutation<MarkAsReadResponse, { notificationId: string }>({
       query: ({ notificationId }) => ({
         url: `/${notificationId}/read`,
-        method: 'PATCH',
+        method: "PATCH",
       }),
-      invalidatesTags: ['Notification'],
+      invalidatesTags: ["Notification"],
     }),
     markAllAsRead: builder.mutation<MarkAsReadResponse, void>({
       query: () => ({
-        url: '/mark-all-read',
-        method: 'PATCH',
+        url: "/mark-all-read",
+        method: "PATCH",
       }),
-      invalidatesTags: ['Notification'],
+      invalidatesTags: ["Notification"],
     }),
     deleteNotification: builder.mutation<DeleteNotificationResponse, { notificationId: string }>({
       query: ({ notificationId }) => ({
         url: `/${notificationId}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
-      invalidatesTags: ['Notification'],
+      invalidatesTags: ["Notification"],
     }),
     deleteAllNotifications: builder.mutation<DeleteNotificationResponse, void>({
       query: () => ({
-        url: '/delete-all',
-        method: 'DELETE',
+        url: "/delete-all",
+        method: "DELETE",
       }),
-      invalidatesTags: ['Notification'],
+      invalidatesTags: ["Notification"],
     }),
   }),
 });

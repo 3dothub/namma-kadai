@@ -1,19 +1,10 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  StatusBar,
-  RefreshControl,
-  Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/store';
+import React from "react";
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, StatusBar, RefreshControl, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 import {
   useGetNotificationsQuery,
   useMarkNotificationAsReadMutation,
@@ -21,48 +12,43 @@ import {
   useDeleteNotificationMutation,
   useDeleteAllNotificationsMutation,
   Notification as NotificationData,
-} from '@/store/api/notificationApi';
+} from "@/store/api/notificationApi";
 
 const getIconForType = (type: string) => {
   switch (type) {
-    case 'order':
-      return 'receipt';
-    case 'promotion':
-      return 'gift';
-    case 'system':
-      return 'information-circle';
-    case 'delivery':
-      return 'bicycle';
+    case "order":
+      return "receipt";
+    case "promotion":
+      return "gift";
+    case "system":
+      return "information-circle";
+    case "delivery":
+      return "bicycle";
     default:
-      return 'notifications';
+      return "notifications";
   }
 };
 
 const getColorForType = (type: string) => {
   switch (type) {
-    case 'order':
-      return '#10B981';
-    case 'promotion':
-      return '#F59E0B';
-    case 'system':
-      return '#3B82F6';
-    case 'delivery':
-      return '#8B5CF6';
+    case "order":
+      return "#10B981";
+    case "promotion":
+      return "#F59E0B";
+    case "system":
+      return "#3B82F6";
+    case "delivery":
+      return "#8B5CF6";
     default:
-      return '#6B7280';
+      return "#6B7280";
   }
 };
 
 export default function NotificationScreen() {
   const router = useRouter();
-  const { user, token } = useSelector((state: RootState) => state.auth);
-  
-  const {
-    data: notificationData,
-    isLoading,
-    error,
-    refetch,
-  } = useGetNotificationsQuery({}, { skip: !user || !token });
+  const { user, token } = useSelector((state: RootState) => state.user);
+
+  const { data: notificationData, isLoading, error, refetch } = useGetNotificationsQuery({}, { skip: !user || !token });
 
   const [markAsRead] = useMarkNotificationAsReadMutation();
   const [markAllAsRead] = useMarkAllAsReadMutation();
@@ -75,13 +61,13 @@ export default function NotificationScreen() {
       try {
         await markAsRead({ notificationId: notification._id }).unwrap();
       } catch (error) {
-        console.error('Failed to mark notification as read:', error);
+        console.error("Failed to mark notification as read:", error);
       }
     }
 
     // Handle navigation based on notification type
-    if (notification.type === 'order' && notification.data?.orderId) {
-      router.push('/(tabs)/order');
+    if (notification.type === "order" && notification.data?.orderId) {
+      router.push("/(tabs)/order");
     }
   };
 
@@ -89,8 +75,8 @@ export default function NotificationScreen() {
     try {
       await markAllAsRead().unwrap();
     } catch (error) {
-      console.error('Failed to mark all as read:', error);
-      Alert.alert('Error', 'Failed to mark all notifications as read');
+      console.error("Failed to mark all as read:", error);
+      Alert.alert("Error", "Failed to mark all notifications as read");
     }
   };
 
@@ -98,26 +84,26 @@ export default function NotificationScreen() {
     try {
       await deleteNotification({ notificationId }).unwrap();
     } catch (error) {
-      console.error('Failed to delete notification:', error);
-      Alert.alert('Error', 'Failed to delete notification');
+      console.error("Failed to delete notification:", error);
+      Alert.alert("Error", "Failed to delete notification");
     }
   };
 
   const handleDeleteAll = async () => {
     Alert.alert(
-      'Delete All Notifications',
-      'Are you sure you want to delete all notifications? This action cannot be undone.',
+      "Delete All Notifications",
+      "Are you sure you want to delete all notifications? This action cannot be undone.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete All',
-          style: 'destructive',
+          text: "Delete All",
+          style: "destructive",
           onPress: async () => {
             try {
               await deleteAllNotifications().unwrap();
             } catch (error) {
-              console.error('Failed to delete all notifications:', error);
-              Alert.alert('Error', 'Failed to delete all notifications');
+              console.error("Failed to delete all notifications:", error);
+              Alert.alert("Error", "Failed to delete all notifications");
             }
           },
         },
@@ -152,16 +138,13 @@ export default function NotificationScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.headerButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color="#111827" />
         </TouchableOpacity>
-        
+
         <View style={styles.headerCenter}>
           <Text style={styles.headerTitle}>Notifications</Text>
           {unreadCount > 0 && (
@@ -174,21 +157,10 @@ export default function NotificationScreen() {
         <View style={styles.headerActions}>
           {notifications.length > 0 && (
             <>
-              <TouchableOpacity 
-                style={styles.headerButton} 
-                onPress={handleMarkAllRead}
-                disabled={unreadCount === 0}
-              >
-                <Ionicons 
-                  name="checkmark-done" 
-                  size={20} 
-                  color={unreadCount === 0 ? '#9CA3AF' : '#10B981'} 
-                />
+              <TouchableOpacity style={styles.headerButton} onPress={handleMarkAllRead} disabled={unreadCount === 0}>
+                <Ionicons name="checkmark-done" size={20} color={unreadCount === 0 ? "#9CA3AF" : "#10B981"} />
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.headerButton} 
-                onPress={handleDeleteAll}
-              >
+              <TouchableOpacity style={styles.headerButton} onPress={handleDeleteAll}>
                 <Ionicons name="trash" size={20} color="#EF4444" />
               </TouchableOpacity>
             </>
@@ -197,16 +169,11 @@ export default function NotificationScreen() {
       </View>
 
       {/* Notifications List */}
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={refetch}
-            colors={['#10B981']}
-            tintColor="#10B981"
-          />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} colors={["#10B981"]} tintColor="#10B981" />
         }
       >
         {notifications.length === 0 ? (
@@ -231,38 +198,32 @@ export default function NotificationScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.cardContent}>
-                  <View style={[
-                    styles.iconContainer,
-                    { backgroundColor: `${getColorForType(notification.type)}15` }
-                  ]}>
+                  <View style={[styles.iconContainer, { backgroundColor: `${getColorForType(notification.type)}15` }]}>
                     <Ionicons
                       name={getIconForType(notification.type) as any}
                       size={18}
                       color={getColorForType(notification.type)}
                     />
                   </View>
-                  
+
                   <View style={styles.textContent}>
                     <View style={styles.titleRow}>
-                      <Text style={[
-                        styles.notificationTitle,
-                        !notification.isRead && styles.unreadTitle
-                      ]}>
+                      <Text style={[styles.notificationTitle, !notification.isRead && styles.unreadTitle]}>
                         {notification.title}
                       </Text>
                       {!notification.isRead && <View style={styles.unreadDot} />}
                     </View>
-                    
+
                     <Text style={styles.notificationMessage} numberOfLines={2}>
                       {notification.message}
                     </Text>
-                    
+
                     <Text style={styles.notificationTime}>
-                      {new Date(notification.createdAt).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
+                      {new Date(notification.createdAt).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </Text>
                   </View>
@@ -290,54 +251,54 @@ export default function NotificationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E5E7EB",
   },
   headerButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerCenter: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
     marginRight: 8,
   },
   unreadBadge: {
-    backgroundColor: '#EF4444',
+    backgroundColor: "#EF4444",
     borderRadius: 10,
     minWidth: 20,
     height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 6,
   },
   unreadBadgeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   scrollView: {
@@ -348,85 +309,85 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   notificationCard: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     marginBottom: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 1,
   },
   unreadCard: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: "#F0FDF4",
     borderLeftWidth: 4,
-    borderLeftColor: '#10B981',
+    borderLeftColor: "#10B981",
   },
   lastCard: {
     marginBottom: 20,
   },
   cardContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     padding: 16,
   },
   iconContainer: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 12,
   },
   textContent: {
     flex: 1,
   },
   titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 4,
   },
   notificationTitle: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
     flex: 1,
   },
   unreadTitle: {
-    fontWeight: '600',
-    color: '#111827',
+    fontWeight: "600",
+    color: "#111827",
   },
   notificationMessage: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
     lineHeight: 20,
     marginBottom: 6,
   },
   notificationTime: {
     fontSize: 12,
-    color: '#9CA3AF',
-    fontWeight: '500',
+    color: "#9CA3AF",
+    fontWeight: "500",
   },
   unreadDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#10B981',
+    backgroundColor: "#10B981",
     marginLeft: 8,
   },
   deleteButton: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
     marginLeft: 8,
   },
   emptyState: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 40,
     paddingVertical: 60,
   },
@@ -434,21 +395,21 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
+    color: "#6B7280",
+    textAlign: "center",
     lineHeight: 20,
   },
 });

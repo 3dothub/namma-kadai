@@ -1,6 +1,6 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from '../index';
-import { favoritesUrl } from '../../config/apiBaseUrl';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { RootState } from "../index";
+import { favoritesUrl } from "../../config/apiBaseUrl";
 
 interface Product {
   _id: string;
@@ -25,42 +25,38 @@ interface AddRemoveFavoriteResponse {
 }
 
 export const favoritesApi = createApi({
-  reducerPath: 'favoritesApi',
+  reducerPath: "favoritesApi",
   baseQuery: fetchBaseQuery({
     baseUrl: favoritesUrl,
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token;
+      const token = (getState() as RootState).user.token;
       if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+        headers.set("authorization", `Bearer ${token}`);
       }
       return headers;
     },
   }),
-  tagTypes: ['Favorites'],
+  tagTypes: ["Favorites"],
   endpoints: (builder) => ({
     getFavorites: builder.query<FavoritesResponse, void>({
-      query: () => '/',
-      providesTags: ['Favorites'],
+      query: () => "/",
+      providesTags: ["Favorites"],
     }),
     addToFavorites: builder.mutation<AddRemoveFavoriteResponse, string>({
       query: (productId) => ({
         url: `/${productId}`,
-        method: 'POST',
+        method: "POST",
       }),
-      invalidatesTags: ['Favorites'],
+      invalidatesTags: ["Favorites"],
     }),
     removeFromFavorites: builder.mutation<AddRemoveFavoriteResponse, string>({
       query: (productId) => ({
         url: `/${productId}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
-      invalidatesTags: ['Favorites'],
+      invalidatesTags: ["Favorites"],
     }),
   }),
 });
 
-export const {
-  useGetFavoritesQuery,
-  useAddToFavoritesMutation,
-  useRemoveFromFavoritesMutation,
-} = favoritesApi;
+export const { useGetFavoritesQuery, useAddToFavoritesMutation, useRemoveFromFavoritesMutation } = favoritesApi;

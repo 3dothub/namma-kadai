@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,55 +8,55 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '@/store';
-import { useCreateOrderMutation } from '@/store/api/orderApi';
-import { clearCart } from '@/store/slices/productSlice';
-import { showSnackbar } from '@/store/slices/snackbarSlice';
-import { useGetVendorProductsQuery, getProductVendorId } from '@/store/api/vendorApi';
-import { useUpdateLocationMutation } from '@/store/api/userApi';
-import { setLocationAccess, addUserAddress } from '@/store/slices/authSlice';
-import { getCurrentLocation, requestLocationPermission } from '@/services/locationService';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "@/store";
+import { useCreateOrderMutation } from "@/store/api/orderApi";
+import { clearCart } from "@/store/slices/productSlice";
+import { showSnackbar } from "@/store/slices/snackbarSlice";
+import { useGetVendorProductsQuery, getProductVendorId } from "@/store/api/vendorApi";
+import { useUpdateLocationMutation } from "@/store/api/userApi";
+import { addUserAddress } from "@/store/slices/userSlice";
+import { getCurrentLocation, requestLocationPermission } from "@/services/locationService";
 
 export default function CheckoutScreen() {
   const dispatch = useDispatch();
-  const { cart, vendors, userLocation } = useSelector((state: RootState) => state.products);
-  const { user, hasLocationAccess } = useSelector((state: RootState) => state.auth);
-  
+  const { cart, vendors } = useSelector((state: RootState) => state.products);
+  const { user, hasLocationAccess, currentLocation } = useSelector((state: RootState) => state.user);
+
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
   const [updateLocation, { isLoading: isUpdatingLocation }] = useUpdateLocationMutation();
-  
+
   // Get vendor information for service type restrictions
   const vendorId = cart.length > 0 ? getProductVendorId(cart[0]) : null;
-  const currentVendor = vendors.find((v: { _id: string | null; }) => v._id === vendorId);
-  
+  const currentVendor = vendors.find((v: { _id: string | null }) => v._id === vendorId);
+
   // Get vendor details if not available in vendors list
   const { data: vendorData } = useGetVendorProductsQuery(
     { vendorId: vendorId! },
     { skip: !vendorId || !!currentVendor }
   );
-  
+
   const vendor = currentVendor || vendorData?.vendor;
-  
-  const [orderType, setOrderType] = useState<'delivery' | 'takeaway'>('delivery');
-  const [paymentMethod, setPaymentMethod] = useState<'cod'>('cod');
+
+  const [orderType, setOrderType] = useState<"delivery" | "takeaway">("delivery");
+  const [paymentMethod, setPaymentMethod] = useState<"cod">("cod");
   const [selectedAddressIndex, setSelectedAddressIndex] = useState<number>(-1);
   const [deliveryAddress, setDeliveryAddress] = useState({
-    street: '',
-    city: '',
-    state: '',
-    pincode: '',
+    street: "",
+    city: "",
+    state: "",
+    pincode: "",
   });
   const [useCurrentLocation, setUseCurrentLocation] = useState(false);
-  const [currentLocationCoords, setCurrentLocationCoords] = useState<{lat: number, lng: number} | null>(null);
-  const [specialInstructions, setSpecialInstructions] = useState('');
+  const [currentLocationCoords, setCurrentLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [specialInstructions, setSpecialInstructions] = useState("");
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
 
-  console.log('Checkout component state:', {
+  console.log("Checkout component state:", {
     cartLength: cart.length,
     isCreatingOrder,
     vendor: vendor?.name,
@@ -66,36 +66,36 @@ export default function CheckoutScreen() {
 
   // Check if user needs location setup
   const needsLocationSetup = () => {
-    return !user?.addresses?.length && !hasLocationAccess && !userLocation;
+    return !user?.addresses?.length && !hasLocationAccess && !currentLocation;
   };
 
   // Show location prompt for new users without location data
   useEffect(() => {
-    if (needsLocationSetup() && orderType === 'delivery') {
+    if (needsLocationSetup() && orderType === "delivery") {
       setShowLocationPrompt(true);
     } else {
       setShowLocationPrompt(false);
     }
-  }, [user, hasLocationAccess, userLocation, orderType]);
+  }, [user, hasLocationAccess, currentLocation, orderType]);
 
   // Set default order type based on vendor service types
   useEffect(() => {
     if (vendor?.serviceTypes) {
       // If vendor only supports takeaway, set it as default
       if (vendor.serviceTypes.takeaway && !vendor.serviceTypes.delivery) {
-        setOrderType('takeaway');
+        setOrderType("takeaway");
       }
       // If vendor only supports delivery, set it as default
       else if (vendor.serviceTypes.delivery && !vendor.serviceTypes.takeaway) {
-        setOrderType('delivery');
+        setOrderType("delivery");
       }
       // If vendor supports both, default to delivery
       else if (vendor.serviceTypes.delivery) {
-        setOrderType('delivery');
+        setOrderType("delivery");
       }
       // Fallback to takeaway if no delivery
       else {
-        setOrderType('takeaway');
+        setOrderType("takeaway");
       }
     }
   }, [vendor]);
@@ -124,7 +124,7 @@ export default function CheckoutScreen() {
           setCurrentLocationCoords(location);
           setUseCurrentLocation(true);
           setSelectedAddressIndex(-1);
-          
+
           // Update user's location via API
           if (user) {
             try {
@@ -132,33 +132,41 @@ export default function CheckoutScreen() {
                 lat: location.lat,
                 lng: location.lng,
               }).unwrap();
-              
-              dispatch(showSnackbar({
-                message: 'Current location updated successfully!',
-                type: 'success',
-              }));
+
+              dispatch(
+                showSnackbar({
+                  message: "Current location updated successfully!",
+                  type: "success",
+                })
+              );
             } catch (error) {
-              console.error('Failed to update location:', error);
+              console.error("Failed to update location:", error);
             }
           }
         } else {
-          dispatch(showSnackbar({
-            message: 'Could not get current location. Please try again.',
-            type: 'error',
-          }));
+          dispatch(
+            showSnackbar({
+              message: "Could not get current location. Please try again.",
+              type: "error",
+            })
+          );
         }
       } else {
-        dispatch(showSnackbar({
-          message: 'Location permission is required for delivery.',
-          type: 'error',
-        }));
+        dispatch(
+          showSnackbar({
+            message: "Location permission is required for delivery.",
+            type: "error",
+          })
+        );
       }
     } catch (error) {
-      console.error('Location error:', error);
-      dispatch(showSnackbar({
-        message: 'Failed to get current location.',
-        type: 'error',
-      }));
+      console.error("Location error:", error);
+      dispatch(
+        showSnackbar({
+          message: "Failed to get current location.",
+          type: "error",
+        })
+      );
     }
   };
 
@@ -178,18 +186,21 @@ export default function CheckoutScreen() {
   };
 
   // Helper function to check if order type is available
-  const isOrderTypeAvailable = (type: 'delivery' | 'takeaway') => {
+  const isOrderTypeAvailable = (type: "delivery" | "takeaway") => {
     if (!vendor?.serviceTypes) return true; // Default to available if no vendor info
     return vendor.serviceTypes[type];
   };
 
   // Calculate totals
   const getTotalPrice = () => {
-    return cart.reduce((total: number, item: { price: number; quantity: number; }) => total + (item.price * item.quantity), 0);
+    return cart.reduce(
+      (total: number, item: { price: number; quantity: number }) => total + item.price * item.quantity,
+      0
+    );
   };
 
   const getDeliveryFee = () => {
-    return orderType === 'delivery' ? 0 : 0;
+    return orderType === "delivery" ? 0 : 0;
   };
 
   const getTaxAmount = () => {
@@ -201,86 +212,83 @@ export default function CheckoutScreen() {
   };
 
   const handlePlaceOrder = async () => {
-    console.log('handlePlaceOrder called');
-    
+    console.log("handlePlaceOrder called");
+
     if (!user) {
-      Alert.alert('Error', 'Please login to place an order');
+      Alert.alert("Error", "Please login to place an order");
       return;
     }
 
     if (cart.length === 0) {
-      Alert.alert('Error', 'Your cart is empty');
+      Alert.alert("Error", "Your cart is empty");
       return;
     }
 
     // Enhanced validation for delivery addresses
-    if (orderType === 'delivery') {
+    if (orderType === "delivery") {
       if (useCurrentLocation && !currentLocationCoords) {
-        Alert.alert('Error', 'Please get your current location for delivery');
+        Alert.alert("Error", "Please get your current location for delivery");
         return;
       }
-      
-      if (!useCurrentLocation && (!deliveryAddress.street || !deliveryAddress.city || !deliveryAddress.state || !deliveryAddress.pincode)) {
-        Alert.alert('Error', 'Please fill in all delivery address fields or use current location');
+
+      if (
+        !useCurrentLocation &&
+        (!deliveryAddress.street || !deliveryAddress.city || !deliveryAddress.state || !deliveryAddress.pincode)
+      ) {
+        Alert.alert("Error", "Please fill in all delivery address fields or use current location");
         return;
       }
 
       // For new users without saved addresses, prompt to save the address
       if (!user.addresses?.length && !useCurrentLocation) {
-        Alert.alert(
-          'Save Address',
-          'Would you like to save this address for future orders?',
-          [
-            { text: 'Skip', style: 'cancel' },
-            {
-              text: 'Save',
-              onPress: () => {
-                const newAddress = {
-                  label: 'Home',
-                  street: deliveryAddress.street,
-                  city: deliveryAddress.city,
-                  state: deliveryAddress.state,
-                  pincode: deliveryAddress.pincode,
-                  location: currentLocationCoords || { lat: 0, lng: 0 },
-                };
-                dispatch(addUserAddress(newAddress));
-              },
+        Alert.alert("Save Address", "Would you like to save this address for future orders?", [
+          { text: "Skip", style: "cancel" },
+          {
+            text: "Save",
+            onPress: () => {
+              const newAddress = {
+                label: "Home",
+                street: deliveryAddress.street,
+                city: deliveryAddress.city,
+                state: deliveryAddress.state,
+                pincode: deliveryAddress.pincode,
+                location: currentLocationCoords || { lat: 0, lng: 0 },
+              };
+              dispatch(addUserAddress(newAddress));
             },
-          ]
-        );
+          },
+        ]);
       }
     }
 
     try {
-      console.log('Starting order creation...');
-      
+      console.log("Starting order creation...");
+
       // Get vendor ID from first cart item (assuming all items are from same vendor)
       const firstItem = cart[0];
-      const vendorId = typeof firstItem.vendorId === 'string' 
-        ? firstItem.vendorId 
-        : firstItem.vendorId.$oid;
-      
-      console.log('Vendor ID:', vendorId);
-      
+      const vendorId = typeof firstItem.vendorId === "string" ? firstItem.vendorId : firstItem.vendorId.$oid;
+
+      console.log("Vendor ID:", vendorId);
+
       // Prepare order items
-      const orderItems = cart.map((item: { _id: any; name: any; price: any; quantity: any; }) => ({
+      const orderItems = cart.map((item: { _id: any; name: any; price: any; quantity: any }) => ({
         productId: item._id,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
       }));
 
-      console.log('Order items:', orderItems);
+      console.log("Order items:", orderItems);
 
       // Prepare delivery address with location coordinates
       let finalDeliveryAddress = null;
-      if (orderType === 'delivery') {
+      if (orderType === "delivery") {
         if (useCurrentLocation && currentLocationCoords) {
           finalDeliveryAddress = {
-            street: 'Current Location',
-            city: '',
-            state: '',
-            pincode: '',
+            street: "Current Location",
+            city: "",
+            state: "",
+            pincode: "",
             location: currentLocationCoords,
           };
         } else if (selectedAddressIndex >= 0 && user?.addresses?.[selectedAddressIndex]) {
@@ -301,46 +309,46 @@ export default function CheckoutScreen() {
         vendorId,
         items: orderItems,
         orderType,
-        ...(orderType === 'delivery' && finalDeliveryAddress && {
-          deliveryAddress: finalDeliveryAddress,
-        }),
+        ...(orderType === "delivery" &&
+          finalDeliveryAddress && {
+            deliveryAddress: finalDeliveryAddress,
+          }),
         scheduleDetails: {
           isScheduled: false,
-          scheduleType: 'immediate' as const,
+          scheduleType: "immediate" as const,
           ...(specialInstructions && { specialInstructions }),
         },
       };
 
-      console.log('Order data:', orderData);
+      console.log("Order data:", orderData);
 
       const response = await createOrder(orderData).unwrap();
-      
-      console.log('Order response:', response);
-      
+
+      console.log("Order response:", response);
+
       if (response.success) {
-        console.log('Order successful, clearing cart...');
+        console.log("Order successful, clearing cart...");
         dispatch(clearCart());
-        
+
         // Show enhanced success snackbar with emoji animation
-        dispatch(showSnackbar({
-          message: ' Order placed successfully!',
-          type: 'success',
-        }));
-        
+        dispatch(
+          showSnackbar({
+            message: " Order placed successfully!",
+            type: "success",
+          })
+        );
+
         // Auto navigate to home after 2 seconds
         setTimeout(() => {
-          router.replace('/(tabs)/home');
+          router.replace("/(tabs)/home");
         }, 2000);
       } else {
-        console.log('Order response not successful:', response);
-        Alert.alert('Error', 'Order placement failed. Please try again.');
+        console.log("Order response not successful:", response);
+        Alert.alert("Error", "Order placement failed. Please try again.");
       }
     } catch (error: any) {
-      console.error('Order creation error:', error);
-      Alert.alert(
-        'Order Failed',
-        error?.data?.message || 'Failed to place order. Please try again.'
-      );
+      console.error("Order creation error:", error);
+      Alert.alert("Order Failed", error?.data?.message || "Failed to place order. Please try again.");
     }
   };
 
@@ -357,9 +365,7 @@ export default function CheckoutScreen() {
         <View style={styles.emptyState}>
           <Ionicons name="person-outline" size={64} color="#D1D5DB" />
           <Text style={styles.emptyStateTitle}>Please Login</Text>
-          <Text style={styles.emptyStateText}>
-            You need to login to proceed with checkout
-          </Text>
+          <Text style={styles.emptyStateText}>You need to login to proceed with checkout</Text>
         </View>
       </SafeAreaView>
     );
@@ -378,13 +384,8 @@ export default function CheckoutScreen() {
         <View style={styles.emptyState}>
           <Ionicons name="cart-outline" size={64} color="#D1D5DB" />
           <Text style={styles.emptyStateTitle}>Cart is Empty</Text>
-          <Text style={styles.emptyStateText}>
-            Add items to your cart to proceed with checkout
-          </Text>
-          <TouchableOpacity 
-            style={styles.shopButton}
-            onPress={() => router.replace('/(tabs)/home')}
-          >
+          <Text style={styles.emptyStateText}>Add items to your cart to proceed with checkout</Text>
+          <TouchableOpacity style={styles.shopButton} onPress={() => router.replace("/(tabs)/home")}>
             <Text style={styles.shopButtonText}>Start Shopping</Text>
           </TouchableOpacity>
         </View>
@@ -408,73 +409,60 @@ export default function CheckoutScreen() {
           <Text style={styles.sectionTitle}>Order Type</Text>
           {vendor && (
             <Text style={styles.vendorInfo}>
-              Available: {vendor.serviceTypes.delivery && 'Delivery'}{vendor.serviceTypes.delivery && vendor.serviceTypes.takeaway && ' • '}
-              {vendor.serviceTypes.takeaway && 'Takeaway'}
+              Available: {vendor.serviceTypes.delivery && "Delivery"}
+              {vendor.serviceTypes.delivery && vendor.serviceTypes.takeaway && " • "}
+              {vendor.serviceTypes.takeaway && "Takeaway"}
             </Text>
           )}
           <View style={styles.orderTypeContainer}>
             {/* Only show delivery option if vendor supports it */}
-            {isOrderTypeAvailable('delivery') && (
+            {isOrderTypeAvailable("delivery") && (
               <TouchableOpacity
                 style={[
                   styles.orderTypeOption,
-                  orderType === 'delivery' && styles.orderTypeSelected,
+                  orderType === "delivery" && styles.orderTypeSelected,
                   !vendor?.serviceTypes.takeaway && styles.orderTypeFullWidth, // Full width if only option
                 ]}
-                onPress={() => setOrderType('delivery')}
+                onPress={() => setOrderType("delivery")}
               >
-                <Ionicons 
-                  name="bicycle-outline" 
-                  size={20} 
-                  color={orderType === 'delivery' ? '#22C55E' : '#6B7280'} 
-                />
-                <Text style={[
-                  styles.orderTypeText,
-                  orderType === 'delivery' && styles.orderTypeTextSelected,
-                ]}>
+                <Ionicons name="bicycle-outline" size={20} color={orderType === "delivery" ? "#22C55E" : "#6B7280"} />
+                <Text style={[styles.orderTypeText, orderType === "delivery" && styles.orderTypeTextSelected]}>
                   Delivery
                 </Text>
                 {vendor?.deliverySettings && (
-                  <Text style={styles.orderTypeSubtext}>
-                    ₹{vendor.deliverySettings.deliveryCharge || 0} fee
-                  </Text>
+                  <Text style={styles.orderTypeSubtext}>₹{vendor.deliverySettings.deliveryCharge || 0} fee</Text>
                 )}
               </TouchableOpacity>
             )}
-            
+
             {/* Only show takeaway option if vendor supports it */}
-            {isOrderTypeAvailable('takeaway') && (
+            {isOrderTypeAvailable("takeaway") && (
               <TouchableOpacity
                 style={[
                   styles.orderTypeOption,
-                  orderType === 'takeaway' && styles.orderTypeSelected,
+                  orderType === "takeaway" && styles.orderTypeSelected,
                   !vendor?.serviceTypes.delivery && styles.orderTypeFullWidth, // Full width if only option
                 ]}
-                onPress={() => setOrderType('takeaway')}
+                onPress={() => setOrderType("takeaway")}
               >
-                <Ionicons 
-                  name="bag-outline" 
-                  size={20} 
-                  color={orderType === 'takeaway' ? '#22C55E' : '#6B7280'} 
-                />
-                <Text style={[
-                  styles.orderTypeText,
-                  orderType === 'takeaway' && styles.orderTypeTextSelected,
-                ]}>
+                <Ionicons name="bag-outline" size={20} color={orderType === "takeaway" ? "#22C55E" : "#6B7280"} />
+                <Text style={[styles.orderTypeText, orderType === "takeaway" && styles.orderTypeTextSelected]}>
                   Takeaway
                 </Text>
-                <Text style={styles.orderTypeSubtext}>
-                  Pick up at store
-                </Text>
+                <Text style={styles.orderTypeSubtext}>Pick up at store</Text>
               </TouchableOpacity>
             )}
           </View>
-          
+
           {/* Show message if vendor has limited service types */}
           {vendor && (!vendor.serviceTypes.delivery || !vendor.serviceTypes.takeaway) && (
             <Text style={styles.serviceNote}>
-              {!vendor.serviceTypes.delivery && vendor.serviceTypes.takeaway && "⚠️ This vendor only offers takeaway service"}
-              {vendor.serviceTypes.delivery && !vendor.serviceTypes.takeaway && "ℹ️ This vendor only offers delivery service"}
+              {!vendor.serviceTypes.delivery &&
+                vendor.serviceTypes.takeaway &&
+                "⚠️ This vendor only offers takeaway service"}
+              {vendor.serviceTypes.delivery &&
+                !vendor.serviceTypes.takeaway &&
+                "ℹ️ This vendor only offers delivery service"}
             </Text>
           )}
         </View>
@@ -483,28 +471,25 @@ export default function CheckoutScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Delivery Time</Text>
           <View style={styles.scheduleCompact}>
-            <TouchableOpacity 
-              style={[styles.scheduleCompactOption, styles.scheduleCompactSelected]}
-              disabled
-            >
+            <TouchableOpacity style={[styles.scheduleCompactOption, styles.scheduleCompactSelected]} disabled>
               <Ionicons name="time-outline" size={16} color="#22C55E" />
               <Text style={styles.scheduleCompactText}>ASAP (20-30 mins)</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.scheduleCompactOption}
-              onPress={() => Alert.alert('Coming Soon', 'Schedule order feature will be available soon!')}
+              onPress={() => Alert.alert("Coming Soon", "Schedule order feature will be available soon!")}
             >
               <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-              <Text style={[styles.scheduleCompactText, { color: '#6B7280' }]}>Schedule Later</Text>
+              <Text style={[styles.scheduleCompactText, { color: "#6B7280" }]}>Schedule Later</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Delivery Address (if delivery selected) */}
-        {orderType === 'delivery' && (
+        {orderType === "delivery" && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Delivery Address</Text>
-            
+
             {/* Location Prompt for New Users */}
             {showLocationPrompt && (
               <View style={styles.locationPrompt}>
@@ -520,31 +505,19 @@ export default function CheckoutScreen() {
 
             {/* Current Location Option */}
             <TouchableOpacity
-              style={[
-                styles.locationOption,
-                useCurrentLocation && styles.locationOptionSelected,
-              ]}
+              style={[styles.locationOption, useCurrentLocation && styles.locationOptionSelected]}
               onPress={handleUseCurrentLocation}
               disabled={isUpdatingLocation}
             >
               <View style={styles.locationOptionContent}>
-                <Ionicons 
-                  name="location" 
-                  size={20} 
-                  color={useCurrentLocation ? '#22C55E' : '#6B7280'} 
-                />
+                <Ionicons name="location" size={20} color={useCurrentLocation ? "#22C55E" : "#6B7280"} />
                 <View style={styles.locationOptionText}>
-                  <Text style={[
-                    styles.locationOptionTitle,
-                    useCurrentLocation && styles.locationOptionTitleSelected,
-                  ]}>
+                  <Text style={[styles.locationOptionTitle, useCurrentLocation && styles.locationOptionTitleSelected]}>
                     Use Current Location
                   </Text>
                 </View>
               </View>
-              {isUpdatingLocation && (
-                <ActivityIndicator size="small" color="#22C55E" />
-              )}
+              {isUpdatingLocation && <ActivityIndicator size="small" color="#22C55E" />}
             </TouchableOpacity>
 
             {/* Saved Addresses */}
@@ -555,10 +528,90 @@ export default function CheckoutScreen() {
                   (
                     address: {
                       label: any;
-                      street: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
-                      city: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
-                      state: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
-                      pincode: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined;
+                      street:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                        | Iterable<React.ReactNode>
+                        | React.ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | React.ReactPortal
+                            | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                            | Iterable<React.ReactNode>
+                            | null
+                            | undefined
+                          >
+                        | null
+                        | undefined;
+                      city:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                        | Iterable<React.ReactNode>
+                        | React.ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | React.ReactPortal
+                            | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                            | Iterable<React.ReactNode>
+                            | null
+                            | undefined
+                          >
+                        | null
+                        | undefined;
+                      state:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                        | Iterable<React.ReactNode>
+                        | React.ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | React.ReactPortal
+                            | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                            | Iterable<React.ReactNode>
+                            | null
+                            | undefined
+                          >
+                        | null
+                        | undefined;
+                      pincode:
+                        | string
+                        | number
+                        | bigint
+                        | boolean
+                        | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                        | Iterable<React.ReactNode>
+                        | React.ReactPortal
+                        | Promise<
+                            | string
+                            | number
+                            | bigint
+                            | boolean
+                            | React.ReactPortal
+                            | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                            | Iterable<React.ReactNode>
+                            | null
+                            | undefined
+                          >
+                        | null
+                        | undefined;
                     },
                     index: number
                   ) => (
@@ -571,16 +624,18 @@ export default function CheckoutScreen() {
                       onPress={() => handleSelectAddress(index)}
                     >
                       <View style={styles.savedAddressContent}>
-                        <Ionicons 
-                          name="home" 
-                          size={18} 
-                          color={selectedAddressIndex === index && !useCurrentLocation ? '#22C55E' : '#6B7280'} 
+                        <Ionicons
+                          name="home"
+                          size={18}
+                          color={selectedAddressIndex === index && !useCurrentLocation ? "#22C55E" : "#6B7280"}
                         />
                         <View style={styles.savedAddressText}>
-                          <Text style={[
-                            styles.savedAddressLabel,
-                            selectedAddressIndex === index && !useCurrentLocation && styles.savedAddressLabelSelected,
-                          ]}>
+                          <Text
+                            style={[
+                              styles.savedAddressLabel,
+                              selectedAddressIndex === index && !useCurrentLocation && styles.savedAddressLabelSelected,
+                            ]}
+                          >
                             {address.label || `Address ${index + 1}`}
                           </Text>
                           <Text style={styles.savedAddressDesc}>
@@ -589,7 +644,8 @@ export default function CheckoutScreen() {
                         </View>
                       </View>
                     </TouchableOpacity>
-                ))}
+                  )
+                )}
               </View>
             )}
 
@@ -597,33 +653,33 @@ export default function CheckoutScreen() {
             {!useCurrentLocation && (
               <View style={styles.addressContainer}>
                 <Text style={styles.manualAddressTitle}>
-                  {selectedAddressIndex >= 0 ? 'Edit Address' : 'Enter New Address'}
+                  {selectedAddressIndex >= 0 ? "Edit Address" : "Enter New Address"}
                 </Text>
                 <TextInput
                   style={styles.input}
                   placeholder="Street Address"
                   value={deliveryAddress.street}
-                  onChangeText={(text) => setDeliveryAddress(prev => ({ ...prev, street: text }))}
+                  onChangeText={(text) => setDeliveryAddress((prev) => ({ ...prev, street: text }))}
                 />
                 <View style={styles.inputRow}>
                   <TextInput
                     style={[styles.input, styles.inputHalf]}
                     placeholder="City"
                     value={deliveryAddress.city}
-                    onChangeText={(text) => setDeliveryAddress(prev => ({ ...prev, city: text }))}
+                    onChangeText={(text) => setDeliveryAddress((prev) => ({ ...prev, city: text }))}
                   />
                   <TextInput
                     style={[styles.input, styles.inputHalf]}
                     placeholder="State"
                     value={deliveryAddress.state}
-                    onChangeText={(text) => setDeliveryAddress(prev => ({ ...prev, state: text }))}
+                    onChangeText={(text) => setDeliveryAddress((prev) => ({ ...prev, state: text }))}
                   />
                 </View>
                 <TextInput
                   style={styles.input}
                   placeholder="Pincode"
                   value={deliveryAddress.pincode}
-                  onChangeText={(text) => setDeliveryAddress(prev => ({ ...prev, pincode: text }))}
+                  onChangeText={(text) => setDeliveryAddress((prev) => ({ ...prev, pincode: text }))}
                   keyboardType="numeric"
                   maxLength={6}
                 />
@@ -636,16 +692,60 @@ export default function CheckoutScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary</Text>
           <View style={styles.orderSummary}>
-            {cart.map((item: { _id: React.Key | null | undefined; name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; quantity: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; price: number; }) => (
-              <View key={item._id} style={styles.orderItem}>
-                <Text style={styles.orderItemName}>
-                  {item.name} x {item.quantity}
-                </Text>
-                <Text style={styles.orderItemPrice}>
-                  ₹{Number(item.price) * Number(item.quantity)}
-                </Text>
-              </View>
-            ))}
+            {cart.map(
+              (item: {
+                _id: React.Key | null | undefined;
+                name:
+                  | string
+                  | number
+                  | bigint
+                  | boolean
+                  | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                  | Iterable<React.ReactNode>
+                  | React.ReactPortal
+                  | Promise<
+                      | string
+                      | number
+                      | bigint
+                      | boolean
+                      | React.ReactPortal
+                      | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                      | Iterable<React.ReactNode>
+                      | null
+                      | undefined
+                    >
+                  | null
+                  | undefined;
+                quantity:
+                  | string
+                  | number
+                  | bigint
+                  | boolean
+                  | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                  | Iterable<React.ReactNode>
+                  | Promise<
+                      | string
+                      | number
+                      | bigint
+                      | boolean
+                      | React.ReactPortal
+                      | React.ReactElement<unknown, string | React.JSXElementConstructor<any>>
+                      | Iterable<React.ReactNode>
+                      | null
+                      | undefined
+                    >
+                  | null
+                  | undefined;
+                price: number;
+              }) => (
+                <View key={item._id} style={styles.orderItem}>
+                  <Text style={styles.orderItemName}>
+                    {item.name} x {item.quantity}
+                  </Text>
+                  <Text style={styles.orderItemPrice}>₹{Number(item.price) * Number(item.quantity)}</Text>
+                </View>
+              )
+            )}
           </View>
         </View>
 
@@ -673,17 +773,8 @@ export default function CheckoutScreen() {
               ]}
               disabled
             >
-              <Ionicons 
-                name="cash-outline" 
-                size={24} 
-                color="#22C55E"
-              />
-              <Text style={[
-                styles.paymentText,
-                styles.paymentTextSelected,
-              ]}>
-                Cash on Delivery
-              </Text>
+              <Ionicons name="cash-outline" size={24} color="#22C55E" />
+              <Text style={[styles.paymentText, styles.paymentTextSelected]}>Cash on Delivery</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -698,7 +789,7 @@ export default function CheckoutScreen() {
             <Text style={styles.billLabel}>Subtotal</Text>
             <Text style={styles.billValue}>₹{getTotalPrice()}</Text>
           </View>
-          {orderType === 'delivery' && (
+          {orderType === "delivery" && (
             <View style={styles.billRow}>
               <Text style={styles.billLabel}>Delivery Fee</Text>
               <Text style={styles.billValue}>₹{getDeliveryFee()}</Text>
@@ -735,124 +826,124 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f8f9fa",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: "#E5E7EB",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     marginTop: 12,
     paddingHorizontal: 16,
     paddingVertical: 20,
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
     marginBottom: 16,
   },
   orderTypeContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   orderTypeOption: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
   },
   orderTypeSelected: {
-    borderColor: '#22C55E',
-    backgroundColor: '#F0FDF4',
+    borderColor: "#22C55E",
+    backgroundColor: "#F0FDF4",
   },
   orderTypeText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
+    fontWeight: "500",
+    color: "#6B7280",
     marginLeft: 8,
   },
   orderTypeTextSelected: {
-    color: '#22C55E',
-    fontWeight: '600',
+    color: "#22C55E",
+    fontWeight: "600",
   },
   orderTypeSubtext: {
     fontSize: 11,
-    color: '#9CA3AF',
+    color: "#9CA3AF",
     marginTop: 2,
-    textAlign: 'center',
+    textAlign: "center",
   },
   orderTypeFullWidth: {
     flex: 1,
   },
   serviceNote: {
     fontSize: 12,
-    color: '#F59E0B',
+    color: "#F59E0B",
     marginTop: 12,
-    fontStyle: 'italic',
-    textAlign: 'center',
+    fontStyle: "italic",
+    textAlign: "center",
   },
   scheduleCompact: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   scheduleCompactOption: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
     gap: 6,
   },
   scheduleCompactSelected: {
-    borderColor: '#22C55E',
-    backgroundColor: '#F0FDF4',
+    borderColor: "#22C55E",
+    backgroundColor: "#F0FDF4",
   },
   scheduleCompactText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#22C55E',
+    fontWeight: "500",
+    color: "#22C55E",
   },
   addressContainer: {
     gap: 12,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: "#D1D5DB",
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 14,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   inputRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   inputHalf: {
@@ -860,57 +951,57 @@ const styles = StyleSheet.create({
   },
   textArea: {
     height: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   orderSummary: {
     gap: 12,
   },
   orderItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   orderItemName: {
     fontSize: 14,
-    color: '#374151',
+    color: "#374151",
     flex: 1,
   },
   orderItemPrice: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
   },
   paymentContainer: {
     gap: 12,
   },
   paymentOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
   },
   paymentSelected: {
-    borderColor: '#22C55E',
-    backgroundColor: '#F0FDF4',
+    borderColor: "#22C55E",
+    backgroundColor: "#F0FDF4",
   },
   paymentText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#6B7280',
+    fontWeight: "500",
+    color: "#6B7280",
     marginLeft: 12,
   },
   paymentTextSelected: {
-    color: '#22C55E',
-    fontWeight: '600',
+    color: "#22C55E",
+    fontWeight: "600",
   },
   bottomContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
@@ -918,119 +1009,119 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   billRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 4,
   },
   billLabel: {
     fontSize: 14,
-    color: '#6B7280',
+    color: "#6B7280",
   },
   billValue: {
     fontSize: 14,
-    color: '#374151',
-    fontWeight: '500',
+    color: "#374151",
+    fontWeight: "500",
   },
   billTotal: {
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: "#E5E7EB",
     paddingTop: 12,
     marginTop: 8,
   },
   billTotalLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
   },
   billTotalValue: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#374151',
+    fontWeight: "700",
+    color: "#374151",
   },
   placeOrderButton: {
-    backgroundColor: '#22C55E',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#22C55E",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
   },
   disabledButton: {
-    backgroundColor: '#9CA3AF',
+    backgroundColor: "#9CA3AF",
   },
   placeOrderText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   emptyState: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: 40,
   },
   emptyStateTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
     marginTop: 16,
     marginBottom: 8,
   },
   emptyStateText: {
     fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
+    color: "#6B7280",
+    textAlign: "center",
     lineHeight: 20,
   },
   shopButton: {
-    backgroundColor: '#22C55E',
+    backgroundColor: "#22C55E",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
     marginTop: 16,
   },
   shopButtonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   vendorInfo: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     marginBottom: 8,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   orderTypeDisabled: {
     opacity: 0.5,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: "#F3F4F6",
   },
   orderTypeTextDisabled: {
-    color: '#9CA3AF',
+    color: "#9CA3AF",
   },
   unavailableText: {
     fontSize: 10,
-    color: '#EF4444',
+    color: "#EF4444",
     marginTop: 2,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   paymentNote: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     marginBottom: 8,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   // Location-related styles
   locationPrompt: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF3C7",
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#F59E0B',
+    borderColor: "#F59E0B",
   },
   locationPromptText: {
     flex: 1,
@@ -1038,34 +1129,34 @@ const styles = StyleSheet.create({
   },
   locationPromptTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#92400E',
+    fontWeight: "600",
+    color: "#92400E",
     marginBottom: 2,
   },
   locationPromptDesc: {
     fontSize: 12,
-    color: '#A16207',
+    color: "#A16207",
     lineHeight: 16,
   },
   locationOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
     marginBottom: 16,
   },
   locationOptionSelected: {
-    borderColor: '#22C55E',
-    backgroundColor: '#F0FDF4',
+    borderColor: "#22C55E",
+    backgroundColor: "#F0FDF4",
   },
   locationOptionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   locationOptionText: {
@@ -1074,17 +1165,17 @@ const styles = StyleSheet.create({
   },
   locationOptionTitle: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
     marginBottom: 2,
   },
   locationOptionTitleSelected: {
-    color: '#22C55E',
-    fontWeight: '600',
+    color: "#22C55E",
+    fontWeight: "600",
   },
   locationOptionDesc: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     lineHeight: 16,
   },
   savedAddresses: {
@@ -1092,25 +1183,25 @@ const styles = StyleSheet.create({
   },
   savedAddressesTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
+    fontWeight: "600",
+    color: "#374151",
     marginBottom: 12,
   },
   savedAddressOption: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: "#E5E7EB",
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: "#F9FAFB",
   },
   savedAddressSelected: {
-    borderColor: '#22C55E',
-    backgroundColor: '#F0FDF4',
+    borderColor: "#22C55E",
+    backgroundColor: "#F0FDF4",
   },
   savedAddressContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   savedAddressText: {
     flex: 1,
@@ -1118,23 +1209,23 @@ const styles = StyleSheet.create({
   },
   savedAddressLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
     marginBottom: 2,
   },
   savedAddressLabelSelected: {
-    color: '#22C55E',
-    fontWeight: '600',
+    color: "#22C55E",
+    fontWeight: "600",
   },
   savedAddressDesc: {
     fontSize: 12,
-    color: '#6B7280',
+    color: "#6B7280",
     lineHeight: 16,
   },
   manualAddressTitle: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
     marginBottom: 12,
   },
 });

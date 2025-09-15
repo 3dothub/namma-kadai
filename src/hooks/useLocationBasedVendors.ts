@@ -1,36 +1,39 @@
-import { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { useLazyGetVendorsQuery } from '../store/api/vendorApi';
-import { setVendors, setLoadingVendors, loadLocationBasedData } from '../store/slices/productSlice';
-import { RootState } from '../store';
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useLazyGetVendorsQuery } from "../store/api/vendorApi";
+import { setVendors, setLoadingVendors, setLoadingProducts } from "../store/slices/productSlice";
+import { setCurrentLocation } from "../store/slices/userSlice";
+import { RootState } from "../store";
+import { AddressData } from "@/services/locationService";
 
 export const useLocationBasedVendors = () => {
   const dispatch = useDispatch();
-  const { userLocation, isLoadingVendors, vendors, nearbyVendors } = useSelector(
-    (state: RootState) => state.products
-  );
-  
+  const { currentLocation } = useSelector((state: RootState) => state.user);
+  const { isLoadingVendors, vendors, nearbyVendors } = useSelector((state: RootState) => state.products);
+
   const [getVendors, { isLoading, error }] = useLazyGetVendorsQuery();
 
-  const loadVendorsByLocation = async (location: { lat: number; lng: number }) => {
+  const loadVendorsByLocation = async (location: { lat: number; lng: number; address: AddressData }) => {
     try {
       dispatch(setLoadingVendors(true));
-      
+      dispatch(setLoadingProducts(true)); // Also set products loading
+
+      // Update current location in user state
+      dispatch(setCurrentLocation(location));
+
       const result = await getVendors({
         lat: location.lat,
         lng: location.lng,
-        radius: 10, // 10km radius
+        radius: 10,
         isActive: true,
       });
 
       if (result.data?.vendors) {
-        dispatch(loadLocationBasedData({
-          vendors: result.data.vendors,
-          location,
-        }));
+        dispatch(setVendors(result.data.vendors)); // This will also set isLoadingProducts to false
       }
     } catch (error) {
-      console.error('Error loading vendors:', error);
+      console.error("Error loading vendors:", error);
+      dispatch(setLoadingProducts(false)); // Ensure loading state is cleared on error
     } finally {
       dispatch(setLoadingVendors(false));
     }
@@ -38,10 +41,10 @@ export const useLocationBasedVendors = () => {
 
   // Auto-load vendors when location changes
   useEffect(() => {
-    if (userLocation) {
-      loadVendorsByLocation(userLocation);
+    if (currentLocation) {
+      loadVendorsByLocation(currentLocation);
     }
-  }, [userLocation]);
+  }, [currentLocation]);
 
   return {
     vendors,
@@ -49,6 +52,6 @@ export const useLocationBasedVendors = () => {
     isLoading: isLoadingVendors || isLoading,
     error,
     loadVendorsByLocation,
-    hasLocation: !!userLocation,
+    hasLocation: !!currentLocation,
   };
 };

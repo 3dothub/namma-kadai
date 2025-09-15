@@ -1,6 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { authApi } from '../api/authApi';
-import { LocationWithAddress } from '../../services/locationService';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { authApi } from "../api/authApi";
+import { LocationWithAddress } from "../../services/locationService";
 
 export interface UserAddress {
   label: string;
@@ -14,7 +14,7 @@ export interface UserAddress {
   };
 }
 
-export interface CartItem {
+export interface UserCartItem {
   productId: string;
   quantity: number;
 }
@@ -25,7 +25,7 @@ export interface User {
   email: string;
   phone: string;
   addresses: UserAddress[];
-  cart: CartItem[];
+  cart: UserCartItem[];
   favorites: string[];
   createdAt: string;
   updatedAt: string;
@@ -53,27 +53,11 @@ const initialState: AuthState = {
   hasCompletedWelcome: false,
 };
 
-const authSlice = createSlice({
-  name: 'auth',
+const userSlice = createSlice({
+  name: "auth",
   initialState,
   reducers: {
-    loginStart: (state) => {
-      state.isLoading = true;
-      state.error = null;
-    },
-    loginSuccess: (state, action: PayloadAction<{ user: User; token: string }>) => {
-      state.isLoading = false;
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.isAuthenticated = true;
-      state.error = null;
-    },
-    loginFailure: (state, action: PayloadAction<string>) => {
-      state.isLoading = false;
-      state.error = action.payload;
-    },
     logout: (state) => {
-      // Reset all state to initial values to completely clear user data
       return {
         user: null,
         token: null,
@@ -111,9 +95,9 @@ const authSlice = createSlice({
         state.user.addresses.splice(action.payload, 1);
       }
     },
-    addToCart: (state, action: PayloadAction<CartItem>) => {
+    addToCart: (state, action: PayloadAction<UserCartItem>) => {
       if (state.user) {
-        const existingItem = state.user.cart.find(item => item.productId === action.payload.productId);
+        const existingItem = state.user.cart.find((item) => item.productId === action.payload.productId);
         if (existingItem) {
           existingItem.quantity += action.payload.quantity;
         } else {
@@ -123,12 +107,12 @@ const authSlice = createSlice({
     },
     removeFromCart: (state, action: PayloadAction<string>) => {
       if (state.user) {
-        state.user.cart = state.user.cart.filter(item => item.productId !== action.payload);
+        state.user.cart = state.user.cart.filter((item) => item.productId !== action.payload);
       }
     },
     updateCartQuantity: (state, action: PayloadAction<{ productId: string; quantity: number }>) => {
       if (state.user) {
-        const item = state.user.cart.find(item => item.productId === action.payload.productId);
+        const item = state.user.cart.find((item) => item.productId === action.payload.productId);
         if (item) {
           item.quantity = action.payload.quantity;
         }
@@ -158,75 +142,51 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     // Handle login mutation
-    builder.addMatcher(
-      authApi.endpoints.login.matchFulfilled,
-      (state, { payload }) => {
-        state.user = payload.user;
-        state.token = payload.token;
-        state.isAuthenticated = true;
-        state.isLoading = false;
-        state.error = null;
-      }
-    );
-    builder.addMatcher(
-      authApi.endpoints.login.matchPending,
-      (state) => {
-        state.isLoading = true;
-        state.error = null;
-      }
-    );
-    builder.addMatcher(
-      authApi.endpoints.login.matchRejected,
-      (state, { error }) => {
-        state.isLoading = false;
-        state.error = error.message || 'Login failed';
-      }
-    );
+    builder.addMatcher(authApi.endpoints.login.matchFulfilled, (state, { payload }) => {
+      state.user = payload.user;
+      state.token = payload.token;
+      state.isAuthenticated = true;
+      state.isLoading = false;
+      state.error = null;
+    });
+    builder.addMatcher(authApi.endpoints.login.matchPending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    });
+    builder.addMatcher(authApi.endpoints.login.matchRejected, (state, { error }) => {
+      state.isLoading = false;
+      state.error = error.message || "Login failed";
+    });
 
     // Handle register mutation
-    builder.addMatcher(
-      authApi.endpoints.register.matchFulfilled,
-      (state, { payload }) => {
-        state.user = payload.user;
-        state.token = payload.token;
-        state.isAuthenticated = true;
-        state.isLoading = false;
-        state.error = null;
-      }
-    );
-    builder.addMatcher(
-      authApi.endpoints.register.matchPending,
-      (state) => {
-        state.isLoading = true;
-        state.error = null;
-      }
-    );
-    builder.addMatcher(
-      authApi.endpoints.register.matchRejected,
-      (state, { error }) => {
-        state.isLoading = false;
-        state.error = error.message || 'Registration failed';
-      }
-    );
+    builder.addMatcher(authApi.endpoints.register.matchFulfilled, (state, { payload }) => {
+      state.user = payload.user;
+      state.token = payload.token;
+      state.isAuthenticated = true;
+      state.isLoading = false;
+      state.error = null;
+    });
+    builder.addMatcher(authApi.endpoints.register.matchPending, (state) => {
+      state.isLoading = true;
+      state.error = null;
+    });
+    builder.addMatcher(authApi.endpoints.register.matchRejected, (state, { error }) => {
+      state.isLoading = false;
+      state.error = error.message || "Registration failed";
+    });
 
     // Handle verify token query
-    builder.addMatcher(
-      authApi.endpoints.verifyToken.matchFulfilled,
-      (state, { payload }) => {
-        state.user = payload.user;
-        state.isAuthenticated = true;
-        state.isLoading = false;
-        state.error = null;
-      }
-    );
+    builder.addMatcher(authApi.endpoints.verifyToken.matchFulfilled, (state, { payload }) => {
+      state.user = payload.user;
+      state.isAuthenticated = true;
+      state.isLoading = false;
+      state.error = null;
+    });
   },
 });
 
-export const { 
-  loginStart, 
-  loginSuccess, 
-  loginFailure, 
-  logout, 
+export const {
+  logout,
   clearError,
   updateUserData,
   setLocationAccess,
@@ -239,6 +199,6 @@ export const {
   toggleFavorite,
   setCurrentLocation,
   clearCurrentLocation,
-  setWelcomeCompleted
-} = authSlice.actions;
-export default authSlice.reducer;
+  setWelcomeCompleted,
+} = userSlice.actions;
+export default userSlice.reducer;

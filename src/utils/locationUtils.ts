@@ -1,18 +1,18 @@
-import { User } from '../store/slices/authSlice';
+import { User } from "../store/slices/userSlice";
 
 export const hasUserLocationData = (user: User | null): boolean => {
-  // For unauthenticated users, we don't have user.addresses, 
+  // For unauthenticated users, we don't have user.addresses,
   // so this should return false to rely on store location
   if (!user || !user.addresses || user.addresses.length === 0) {
     return false;
   }
-  
+
   return user.addresses.some(
-    address => 
-      address.location && 
-      address.location.lat && 
+    (address) =>
+      address.location &&
+      address.location.lat &&
       address.location.lng &&
-      address.location.lat !== 0 && 
+      address.location.lat !== 0 &&
       address.location.lng !== 0
   );
 };
@@ -21,17 +21,17 @@ export const getUserCurrentLocation = (user: User | null) => {
   if (!hasUserLocationData(user) || !user?.addresses) {
     return null;
   }
-  
+
   // Get the first address with location data (you can modify this logic)
   const addressWithLocation = user.addresses.find(
-    address => 
-      address.location && 
-      address.location.lat && 
+    (address) =>
+      address.location &&
+      address.location.lat &&
       address.location.lng &&
-      address.location.lat !== 0 && 
+      address.location.lat !== 0 &&
       address.location.lng !== 0
   );
-  
+
   return addressWithLocation ? addressWithLocation.location : null;
 };
 

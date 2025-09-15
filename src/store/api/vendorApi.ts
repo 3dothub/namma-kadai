@@ -1,6 +1,6 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { RootState } from '../index';
-import { vendorUrl } from '../../config/apiBaseUrl';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { RootState } from "../index";
+import { vendorUrl } from "../../config/apiBaseUrl";
 
 export interface Vendor {
   _id: string;
@@ -77,28 +77,30 @@ export const getVendorLocation = (vendor: Vendor) => {
 };
 
 export const getVendorMainCategory = (vendor: Vendor) => {
-  return vendor.shopDetails.categories[0] || 'General';
+  return vendor.shopDetails.categories[0] || "General";
 };
 
 export const isVendorOpen = (vendor: Vendor) => {
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase() as keyof typeof vendor.shopDetails.openingHours;
+  const today = new Date()
+    .toLocaleDateString("en-US", { weekday: "long" })
+    .toLowerCase() as keyof typeof vendor.shopDetails.openingHours;
   const todayHours = vendor.shopDetails.openingHours[today];
-  
+
   if (!todayHours.isOpen) return false;
-  
+
   const now = new Date();
-  const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-  
+  const currentTime = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
   return currentTime >= todayHours.open && currentTime <= todayHours.close;
 };
 
 export const getVendorImage = (vendor: Vendor) => {
-  return vendor.shopDetails.logoUrl || '@/assets/icon.png';
+  return vendor.shopDetails.logoUrl || "@/assets/icon.png";
 };
 
 // Product helper functions
 export const getProductMainImage = (product: Product) => {
-  return product.images && product.images.length > 0 ? product.images[0] : '@/assets/icon.png';
+  return product.images && product.images.length > 0 ? product.images[0] : "@/assets/icon.png";
 };
 
 export const isProductAvailable = (product: Product) => {
@@ -108,7 +110,7 @@ export const isProductAvailable = (product: Product) => {
 export const getProductDeliveryTime = (product: Product, vendor?: Vendor) => {
   // You can compute this based on vendor location, product type, etc.
   // For now, return a default value
-  return '30-45 mins';
+  return "30-45 mins";
 };
 
 export const formatProductUnit = (product: Product) => {
@@ -117,7 +119,7 @@ export const formatProductUnit = (product: Product) => {
 
 // Helper to extract vendorId from different formats
 export const getProductVendorId = (product: Product): string => {
-  if (typeof product.vendorId === 'string') {
+  if (typeof product.vendorId === "string") {
     return product.vendorId;
   }
   return product.vendorId.$oid;
@@ -125,7 +127,7 @@ export const getProductVendorId = (product: Product): string => {
 
 // Helper to extract date from different formats
 export const getProductDate = (dateField: { $date: string } | string): Date => {
-  if (typeof dateField === 'string') {
+  if (typeof dateField === "string") {
     return new Date(dateField);
   }
   return new Date(dateField.$date);
@@ -157,23 +159,23 @@ interface VendorProductsResponse {
 }
 
 export const vendorApi = createApi({
-  reducerPath: 'vendorApi',
+  reducerPath: "vendorApi",
   baseQuery: fetchBaseQuery({
     baseUrl: vendorUrl,
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as RootState).auth.token;
+      const token = (getState() as RootState).user.token;
       if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+        headers.set("authorization", `Bearer ${token}`);
       }
       return headers;
     },
   }),
-  tagTypes: ['Vendor', 'VendorProducts'],
+  tagTypes: ["Vendor", "VendorProducts"],
   endpoints: (builder) => ({
     getVendors: builder.query<VendorsResponse, GetVendorsRequest>({
       query: ({ lat, lng, radius = 5, city, isActive = true }) => ({
-        url: '',
-        method: 'GET',
+        url: "",
+        method: "GET",
         params: {
           lat,
           lng,
@@ -182,24 +184,20 @@ export const vendorApi = createApi({
           isActive,
         },
       }),
-      providesTags: ['Vendor'],
+      providesTags: ["Vendor"],
     }),
     getVendorProducts: builder.query<VendorProductsResponse, GetVendorProductsRequest>({
       query: ({ vendorId }) => ({
-        url: '/products',
-        method: 'GET',
+        url: "/products",
+        method: "GET",
         params: {
           vendorId,
         },
       }),
-      providesTags: ['VendorProducts'],
+      providesTags: ["VendorProducts"],
     }),
   }),
 });
 
-export const { 
-  useGetVendorsQuery, 
-  useGetVendorProductsQuery,
-  useLazyGetVendorsQuery,
-  useLazyGetVendorProductsQuery 
-} = vendorApi;
+export const { useGetVendorsQuery, useGetVendorProductsQuery, useLazyGetVendorsQuery, useLazyGetVendorProductsQuery } =
+  vendorApi;

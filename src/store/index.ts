@@ -1,26 +1,26 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { persistStore, persistReducer } from 'redux-persist';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { combineReducers } from '@reduxjs/toolkit';
-import authSlice from './slices/authSlice';
-import productSlice from './slices/productSlice';
-import snackbarSlice from './slices/snackbarSlice';
-import { authApi } from './api/authApi';
-import { userApi } from './api/userApi';
-import { vendorApi } from './api/vendorApi';
-import { favoritesApi } from './api/favoritesApi';
-import { orderApi } from './api/orderApi';
-import { notificationApi } from './api/notificationApi';
-import { authMiddleware } from './middleware';
+import { configureStore } from "@reduxjs/toolkit";
+import { persistStore, persistReducer } from "redux-persist";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { combineReducers } from "@reduxjs/toolkit";
+import productSlice from "./slices/productSlice";
+import userSlice from "./slices/userSlice";
+import snackbarSlice from "./slices/snackbarSlice";
+import { authApi } from "./api/authApi";
+import { userApi } from "./api/userApi";
+import { vendorApi } from "./api/vendorApi";
+import { favoritesApi } from "./api/favoritesApi";
+import { orderApi } from "./api/orderApi";
+import { notificationApi } from "./api/notificationApi";
+import { authMiddleware } from "./middleware";
 
 const persistConfig = {
-  key: 'root',
+  key: "root",
   storage: AsyncStorage,
-  whitelist: ['auth', 'products'], // Persist both auth and products
+  whitelist: ["user", "products"], // Persist both user and products
 };
 
 const rootReducer = combineReducers({
-  auth: authSlice,
+  user: userSlice,
   products: productSlice,
   snackbar: snackbarSlice,
   [authApi.reducerPath]: authApi.reducer,
@@ -38,15 +38,22 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['persist/FLUSH', 'persist/REHYDRATE', 'persist/PAUSE', 'persist/PERSIST', 'persist/PURGE', 'persist/REGISTER'],
+        ignoredActions: [
+          "persist/FLUSH",
+          "persist/REHYDRATE",
+          "persist/PAUSE",
+          "persist/PERSIST",
+          "persist/PURGE",
+          "persist/REGISTER",
+        ],
       },
     }).concat(
-      authApi.middleware, 
-      userApi.middleware, 
-      vendorApi.middleware, 
-      favoritesApi.middleware, 
-      orderApi.middleware, 
-      notificationApi.middleware, 
+      authApi.middleware,
+      userApi.middleware,
+      vendorApi.middleware,
+      favoritesApi.middleware,
+      orderApi.middleware,
+      notificationApi.middleware,
       authMiddleware
     ),
 });
