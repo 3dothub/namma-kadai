@@ -8,6 +8,7 @@ import { orderApi } from "../api/orderApi";
 import { notificationApi } from "../api/notificationApi";
 import { showSnackbar } from "../slices/snackbarSlice";
 import { logout } from "../slices/userSlice";
+import { clearAllProductData } from "../slices/productSlice";
 
 interface ErrorResponse {
   data?: {
@@ -26,6 +27,7 @@ export const authMiddleware: Middleware = (store) => (next) => (action) => {
     store.dispatch(favoritesApi.util.resetApiState());
     store.dispatch(orderApi.util.resetApiState());
     store.dispatch(notificationApi.util.resetApiState());
+    store.dispatch(clearAllProductData());
     store.dispatch(showSnackbar({ message: "Logged out successfully", type: "success" }));
   }
 
